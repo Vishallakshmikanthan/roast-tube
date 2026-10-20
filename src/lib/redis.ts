@@ -1,0 +1,13 @@
+// src/lib/redis.ts
+import { Redis } from "@upstash/redis";
+import { env } from "./env";
+
+export const redis: Redis | null =
+  env.UPSTASH_REDIS_REST_URL &&
+  env.UPSTASH_REDIS_REST_TOKEN &&
+  !env.UPSTASH_REDIS_REST_URL.includes("mock.upstash.io")
+    ? new Redis({
+        url: env.UPSTASH_REDIS_REST_URL,
+        token: env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
