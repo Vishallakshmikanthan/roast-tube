@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
@@ -5,6 +8,6 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL || "postgresql://localhost:5432/roasttube",
+    url: process.env.DATABASE_URL!,
   },
 });
