@@ -1,147 +1,222 @@
-import { AuthButtons } from "@/components/auth/AuthButtons";
-import { Flame, Sparkles, Shield, Zap, Skull, Swords, RefreshCw } from "lucide-react";
-import Link from "next/link";
+"use client";
+
+import { Link, useLocation } from "@/lib/navigation";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { useSession } from "@/components/providers/AuthProvider";
+import { useState } from "react";
 
 export default function Home() {
+  const { status, signIn } = useSession();
+  const [, navigate] = useLocation();
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const connect = async () => {
+    if (status === "authenticated") {
+      navigate("/roast");
+      return;
+    }
+    try {
+      setBusy(true);
+      setError("");
+      await signIn("/roast");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not start Google sign-in.",
+      );
+      setBusy(false);
+    }
+  };
+
   return (
-    <main className="relative flex-1 flex flex-col justify-between overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-rose-600/20 via-amber-600/10 to-transparent blur-3xl pointer-events-none -z-10" />
-
-      {/* Navigation Header */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-gradient-to-tr from-rose-600 to-amber-500 rounded-xl shadow-lg shadow-rose-900/30">
-            <Flame className="w-6 h-6 text-white fill-current" />
-          </div>
-          <span className="font-extrabold text-2xl tracking-tight text-white">
-            Roast<span className="text-rose-500">Tube</span>
+    <main className="max-w-[1240px] mx-auto px-4 pt-8">
+      <section className="grid lg:grid-cols-[1fr_.92fr] gap-7 items-center min-h-[500px]">
+        <div className="relative z-10 py-8">
+          <span className="inline-flex border-2 border-black bg-[#f6ce47] px-3 py-1 font-extrabold text-xs uppercase tracking-wide -rotate-2 shadow-[3px_3px_0_#18130f]">
+            Read-only. Roast-only. No chill.
           </span>
-        </div>
-
-        <nav className="flex items-center gap-4 text-sm font-medium text-slate-400">
-          <Link href="/privacy" className="hover:text-slate-200 transition-colors">
-            Privacy
-          </Link>
-          <Link href="/terms" className="hover:text-slate-200 transition-colors">
-            Terms
-          </Link>
-        </nav>
-      </header>
-
-      {/* Hero Section */}
-      <section className="w-full max-w-4xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center text-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold mb-6 shadow-inner">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Brutally Honest AI Roasting for YouTube</span>
-        </div>
-
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white mb-6 leading-[1.1]">
-          How <span className="bg-gradient-to-r from-rose-500 via-red-500 to-amber-400 bg-clip-text text-transparent">cooked</span> is your YouTube?
-        </h1>
-
-        <p className="max-w-2xl text-lg sm:text-xl text-slate-300 font-normal leading-relaxed mb-10">
-          Sign in with Google. We safely scan your liked videos, subscriptions and playlists (100% read-only), and an AI roasts your taste ruthlessly in <span className="text-white font-medium">English</span>, <span className="text-rose-400 font-medium">Tanglish</span>, or <span className="text-amber-400 font-medium">Hinglish</span>.
-        </p>
-
-        {/* Auth CTA & Google Consent */}
-        <div className="w-full mb-16">
-          <AuthButtons />
-        </div>
-
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full text-left">
-          <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-sm hover:border-slate-700/80 transition-all">
-            <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center mb-3">
-              <Skull className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-200 text-base mb-1">5 Personas</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Angry Chef, Disappointed Aunt, Gym Bro, Gen Alpha Kid, and 90s News Anchor.
-            </p>
+          <h1 className="display mt-6 text-[clamp(4rem,8vw,7rem)] leading-[.82] max-w-[690px]">
+            Your YouTube
+            <br />
+            taste.
+            <br />
+            <span className="text-[#f22968]">Your public</span>
+            <br />
+            <span className="text-[#f22968]">humiliation.</span>
+          </h1>
+          <p className="max-w-[510px] mt-6 text-lg md:text-xl font-semibold leading-snug">
+            Let the algorithm expose your questionable taste. You bring the
+            watchlist; we bring the receipts.
+          </p>
+          <div className="flex flex-wrap gap-3 mt-7">
+            <button
+              onClick={connect}
+              disabled={busy || status === "loading"}
+              className="comic-button text-lg"
+            >
+              {busy
+                ? "Connecting…"
+                : status === "authenticated"
+                  ? "Roast my taste"
+                  : "Connect YouTube"}{" "}
+              <ArrowRight size={19} />
+            </button>
+            <Link
+              href="/roast/demo"
+              className="comic-button secondary text-lg no-underline"
+            >
+              <img
+                src="/images/play-cat-cutout.webp"
+                alt=""
+                className="w-7 h-7 object-contain"
+              />{" "}
+              Try sample roast
+            </Link>
           </div>
-
-          <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-sm hover:border-slate-700/80 transition-all">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-3">
-              <Flame className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-200 text-base mb-1">3 Heat Levels</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              From friendly teasing (Mild) to &quot;Call My Mom&quot; emotional destruction.
+          {error && (
+            <p
+              role="alert"
+              className="mt-3 p-3 bg-[#ffe2e7] border-2 border-[#ed3346] font-bold text-sm"
+            >
+              {error}
             </p>
+          )}
+          <div className="mt-5 max-w-[550px] flex items-start gap-2 border-2 border-black bg-[#fff8e8] p-3 text-sm font-semibold">
+            <ShieldCheck className="shrink-0 mt-0.5 text-[#278b6f]" />
+            <span>
+              Google read-only access: liked videos, subscriptions &amp;
+              playlists. You choose what to share. We never ask for your
+              password.
+            </span>
           </div>
-
-          <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-sm hover:border-slate-700/80 transition-all">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3">
-              <RefreshCw className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-200 text-base mb-1">3 Languages</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Instant toggling between English, Tanglish, and Hinglish with zero re-scanning.
-            </p>
+        </div>
+        <div className="meme-collage relative min-h-[390px] lg:min-h-[490px] flex items-center justify-center">
+          <div className="absolute inset-3 bg-[#f22968] border-[3px] border-black rotate-2 shadow-[7px_7px_0_#18130f]"></div>
+          <div className="absolute inset-5 border-2 border-black opacity-30 -rotate-3"></div>
+          <img
+            src="/images/pixel-cat-cutout.webp"
+            alt="Pixel-art cat with a YouTube play button"
+            className="relative z-10 w-[min(84%,460px)] max-h-[430px] object-contain drop-shadow-[5px_5px_0_#18130f]"
+          />
+          <img
+            src="/images/judging-cat.webp"
+            alt="A cat judging your questionable taste"
+            className="absolute z-20 bottom-0 right-0 w-[39%] max-h-60 object-contain rotate-6 drop-shadow-[4px_4px_0_#18130f]"
+          />
+          <img
+            src="/images/crying-doge.webp"
+            alt=""
+            className="absolute z-20 bottom-0 left-0 w-[42%] object-contain -rotate-6 drop-shadow-[4px_4px_0_#18130f]"
+          />
+          <div className="sticker absolute top-7 right-4 z-20 bg-[#fff8e8] px-4 py-3 display text-2xl leading-none">
+            BRO WHAT
+            <br />
+            IS THIS?
           </div>
-
-          <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-sm hover:border-slate-700/80 transition-all">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
-              <Swords className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-200 text-base mb-1">Roast Battle</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Challenge friends with an invite link to crown the bigger algorithm disaster.
-            </p>
+          <div className="absolute bottom-6 left-0 rotate-[-5deg] bg-[#f6ce47] border-2 border-black px-3 py-2 mono text-xs font-bold">
+            BRAINROT
+            <br />
+            FOREVER?
+          </div>
+          <div
+            className="absolute top-1/2 left-2 text-[#18130f] text-5xl display rotate-[-15deg]"
+            aria-hidden
+          >
+            ?!
           </div>
         </div>
       </section>
-
-      {/* Compliance and Policy Footer as mandated in §1.4, §14.2, §16.1 */}
-      <footer className="w-full border-t border-slate-800/80 bg-slate-950/60 py-8 px-6 text-xs text-slate-500">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col gap-1 text-center md:text-left">
-            <p>
-              RoastTube&apos;s use and transfer to any other app of information received from Google APIs adheres to the{" "}
-              <a
-                href="https://developers.google.com/terms/api-services-user-data-policy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-slate-300"
-              >
-                Google API Services User Data Policy
-              </a>
-              , including the Limited Use requirements.
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        {[
+          ["NPC ENERGY", "A taste profile with receipts.", "#f6ce47"],
+          ["TERMINAL BRAINROT", "The numbers do not lie.", "#f22968"],
+          ["MAIN CHARACTER?", "A deeply unserious diagnosis.", "#33c9b4"],
+          ["COOKED", "Friendship-safe levels of fire.", "#f28b45"],
+        ].map(([title, desc, color]) => (
+          <article
+            key={title}
+            className="comic-card p-4 min-h-[158px] relative overflow-hidden"
+            style={{ backgroundColor: color }}
+          >
+            <h2 className="display relative z-10 text-3xl leading-none max-w-[145px]">
+              {title}
+            </h2>
+            <p className="relative z-10 font-bold text-xs mt-4 max-w-[140px]">
+              {desc}
             </p>
-            <p>
-              By using RoastTube, you agree to the{" "}
-              <a
-                href="https://www.youtube.com/t/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-slate-300"
-              >
-                YouTube Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-slate-300"
-              >
-                Google Privacy Policy
-              </a>
-              .
-            </p>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-slate-300 transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-slate-300 transition-colors">
-              Terms of Service
-            </Link>
-          </div>
+            <img
+              src={
+                title === "NPC ENERGY"
+                  ? "/images/crying-doge.webp"
+                  : title === "MAIN CHARACTER?"
+                    ? "/images/judging-cat.webp"
+                    : "/images/pixel-cat-cutout.webp"
+              }
+              alt=""
+              className="absolute right-[-12px] bottom-[-12px] w-[100px] sm:w-[125px] object-contain opacity-80"
+            />
+          </article>
+        ))}
+      </section>
+      <section className="grid md:grid-cols-[.75fr_1.25fr] gap-8 py-20 items-start">
+        <div>
+          <p className="mono text-xs font-bold text-[#f22968]">
+            THE ROAST PROCESS / 01—03
+          </p>
+          <h2 className="display text-6xl leading-[.86] mt-3">
+            A roast with
+            <br />
+            actual receipts.
+          </h2>
+          <p className="mt-4 max-w-sm font-medium text-[#554b40]">
+            No vibes-based surveillance. Your roast is based on the YouTube data
+            you authorize—and nothing else.
+          </p>
         </div>
-      </footer>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {[
+            [
+              "01",
+              "Connect",
+              "Authorize read-only access through Google. We analyze your liked videos, subscriptions and playlists.",
+            ],
+            [
+              "02",
+              "Pick your heat",
+              "Choose a roast persona, language and how spicy the truth should be.",
+            ],
+            [
+              "03",
+              "Take the hit",
+              "Get a shareable diagnosis, receipts and a brainrot score.",
+            ],
+          ].map(([num, title, body]) => (
+            <article key={num} className="comic-card p-5">
+              <span className="mono text-[#f22968] font-bold">{num} /</span>
+              <h3 className="display text-3xl mt-2">{title}</h3>
+              <p className="text-sm mt-2 leading-relaxed">{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="border-[3px] border-black bg-[#1b1713] text-[#fff8e8] p-6 md:p-9 shadow-[7px_7px_0_#f22968] mb-10 grid md:grid-cols-[1fr_auto] items-center gap-6">
+        <div>
+          <p className="mono text-xs text-[#f6ce47]">
+            FIVE PERSONALITIES. THREE HEAT LEVELS.
+          </p>
+          <h2 className="display text-5xl mt-2">Choose your own damage.</h2>
+          <p className="text-sm text-[#d3c5ad] mt-2 max-w-xl">
+            Disappointed aunt, gym bro, angry chef, Gen Alpha or a news anchor
+            who has seen too much. Mild, medium, or maximum.
+          </p>
+        </div>
+        <Link
+          href="/roast/demo"
+          className="comic-button no-underline !bg-[#f6ce47] !text-black"
+        >
+          Preview a sample <ArrowRight size={18} />
+        </Link>
+      </section>
     </main>
   );
 }

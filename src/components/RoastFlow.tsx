@@ -1,0 +1,1540 @@
+"use client";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "@/lib/navigation";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Download,
+  Flame,
+  LoaderCircle,
+  LockKeyhole,
+  Share2,
+  ShieldCheck,
+  Swords,
+  Trash2,
+} from "lucide-react";
+import { useSession } from "@/components/providers/AuthProvider";
+import { apiError } from "@/lib/api-error";
+import {
+  BattleOutcome,
+  sampleBattle,
+  type BattleResult,
+} from "./BattleOutcome";
+
+type Persona = "aunt" | "gym_bro" | "angry_chef" | "gen_alpha" | "news_anchor";
+type Lang = "en" | "tanglish" | "hinglish";
+type Heat = "mild" | "medium" | "max";
+type Stats = {
+  counts: { likes: number; subs: number; playlists: number };
+  ratios: Record<string, number>;
+  topCategories: { name: string; share: number }[];
+  topChannels: { name: string; count: number }[];
+  ghostSubs: number;
+  tutorialsSaved: number;
+  shortsCount: number;
+  nightLikes: number;
+  brainrotTitles: number;
+  brainRotScore: number;
+  tier: string;
+  rarity: string;
+  aura: number;
+  digitalAge: number;
+  rizz: number;
+  npc: number;
+  mainCharacter: number;
+  partial: boolean;
+};
+type Content = {
+  tier_title: string;
+  diagnosis: { condition: string; symptoms: string[]; treatment: string };
+  red_flag: string;
+  green_flag: string;
+  roast: string;
+  evidence: string[];
+  receipts: { id: string; label: string; joke: string }[];
+  aura_comment: string;
+  digital_age_comment: string;
+  meter_comments: { rizz: string; npc: string; main_character: string };
+  share_line: string;
+};
+type Roast = {
+  slug: string;
+  content: Content;
+  degraded: boolean;
+  isPublic: boolean;
+  persona: Persona;
+  lang: Lang;
+  heat: Heat;
+  stats?: Stats | null;
+};
+type Saved = {
+  slug: string;
+  content: Content;
+  stats?: Stats | null;
+  persona: Persona;
+  heat: Heat;
+  lang: Lang;
+  at: string;
+  demo?: boolean;
+};
+const personaLabels: Record<Persona, string> = {
+  aunt: "Disappointed aunt",
+  gym_bro: "Gym bro",
+  angry_chef: "Angry chef",
+  gen_alpha: "Gen Alpha",
+  news_anchor: "News anchor",
+};
+const sampleContent: Content = {
+  tier_title: "Certified Brainrot Enjoyer",
+  diagnosis: {
+    condition: "Algorithmic snack goblin",
+    symptoms: [
+      "One more video syndrome",
+      "Tutorials saved for a future self",
+      "A suspiciously late-night scroll",
+    ],
+    treatment: "Close the app. Touch grass. Maybe finish one tutorial first.",
+  },
+  red_flag:
+    "Your watchlist has the structural integrity of a 2 a.m. rabbit hole.",
+  green_flag:
+    "At least your curiosity has range. The algorithm is working overtime.",
+  roast:
+    "Your YouTube history is giving “I opened one video to learn a skill and woke up three hours later watching a raccoon rate snacks.” There is ambition in there. It is just buried under a highly organized pile of distractions. The algorithm has stopped recommending things and started checking on you.",
+  evidence: [
+    "A suspiciously committed late-night viewing pattern",
+    "Tutorials saved with the confidence of someone who will definitely start tomorrow",
+    "A diverse channel roster held together by pure curiosity",
+  ],
+  receipts: [
+    {
+      id: "r1",
+      label: "The midnight spiral",
+      joke: "The clock says bedtime. Your history says one more video.",
+    },
+    {
+      id: "r2",
+      label: "The future project",
+      joke: "Saved the tutorial. Considered the tutorial. That counts, right?",
+    },
+    {
+      id: "r3",
+      label: "Variety hour",
+      joke: "Your recommendations need a map and a snack break.",
+    },
+  ],
+  aura_comment:
+    "Your aura is buffering—but there is a nice little glow behind the loading icon.",
+  digital_age_comment: "Spiritually 17 tabs open.",
+  meter_comments: {
+    rizz: "The confidence is there. The follow-through is buffering.",
+    npc: "You have side-quest energy.",
+    main_character: "A protagonist with a chaotic watchlist.",
+  },
+  share_line: "My YouTube taste has been professionally roasted.",
+};
+function isDemoPath(path: string) {
+  return path.includes("/demo");
+}
+function baseRoute(path: string) {
+  return path.split("?")[0];
+}
+function storageKey(identity: string) {
+  return `roasttube:saved:${identity}`;
+}
+function readSaved(identity: string): Saved[] {
+  try {
+    const rows = JSON.parse(localStorage.getItem(storageKey(identity)) || "[]");
+    if (!Array.isArray(rows)) return [];
+    return rows.filter(
+      (row: Saved) => Date.parse(row.at) > Date.now() - 30 * 24 * 3600 * 1000,
+    );
+  } catch {
+    return [];
+  }
+}
+function download(name: string, text: string) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function reportText(r: Roast) {
+  return `ROASTTUBE — YOUR ROAST\n${r.content.tier_title}\n\n${r.content.roast}\n\nDiagnosis: ${r.content.diagnosis.condition}\n${r.content.diagnosis.symptoms.map((s) => `• ${s}`).join("\n")}\n\nReceipts:\n${r.content.receipts.map((x) => `• ${x.label}: ${x.joke}`).join("\n")}\n\nRed flag: ${r.content.red_flag}\nGreen flag: ${r.content.green_flag}\n\n${r.content.share_line}${r.stats ? `\n\nScore: ${r.stats.brainRotScore}/100 · Tier ${r.stats.tier}` : ""}\n`;
+}
+const human = (s: string) =>
+  s.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+export default function RoastFlow() {
+  const [path, setPath] = useLocation();
+  const { data, status, signIn } = useSession();
+  const identity = data?.user?.googleSub || data?.user?.email || "visitor";
+  const demo = isDemoPath(path);
+  const [persona, setPersona] = useState<Persona>("aunt");
+  const [lang, setLang] = useState<Lang>("en");
+  const [heat, setHeat] = useState<Heat>("medium");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loadingShared, setLoadingShared] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [roast, setRoast] = useState<Roast | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [step, setStep] = useState(0);
+  const [saved, setSaved] = useState<Saved[]>([]);
+  const [storyIndex, setStoryIndex] = useState(0);
+  const [battleCode, setBattleCode] = useState("");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (code) setBattleCode(code);
+    }
+  }, []);
+  const [shareState, setShareState] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [shareConsent, setShareConsent] = useState(false);
+  const [battleConsent, setBattleConsent] = useState(false);
+  useEffect(() => {
+    setSaved(readSaved(identity));
+  }, [identity]);
+  useEffect(() => {
+    if (path === "/roast" || path === "/roast/demo") setStep(0);
+  }, [path]);
+  useEffect(() => {
+    if (path !== "/roast/demo/analyzing") return;
+    const timer = window.setTimeout(() => setPath("/roast/demo/result"), 1200);
+    return () => window.clearTimeout(timer);
+  }, [path, setPath]);
+  useEffect(() => {
+    const match = routeMatchResult(path);
+    let slug: string | null = null;
+    try {
+      slug = match ? decodeURIComponent(match) : null;
+    } catch {
+      setError("The roast link is malformed.");
+    }
+    if (slug && roast?.slug !== slug) {
+      let cancelled = false;
+      setLoadingShared(true);
+      setError("");
+      fetch(`/api/roast/${encodeURIComponent(slug)}`, {
+        credentials: "include",
+      })
+        .then(async (res) => {
+          const d = await res.json();
+          if (!res.ok)
+            throw new Error(apiError(d, "This roast could not be loaded."));
+          if (!cancelled) setRoast(d as Roast);
+        })
+        .catch((e) => {
+          if (!cancelled)
+            setError(
+              e instanceof Error
+                ? e.message
+                : "This roast could not be loaded.",
+            );
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingShared(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+    return undefined;
+  }, [path, roast, loadAttempt]);
+  useEffect(() => {
+    if (demo && roast?.slug !== "sample-demo") {
+      setRoast({
+        slug: "sample-demo",
+        content: sampleContent,
+        degraded: false,
+        isPublic: false,
+        persona: "aunt",
+        lang: "en",
+        heat: "medium",
+        stats: {
+          counts: { likes: 128, subs: 37, playlists: 8 },
+          ratios: {
+            shorts: 0.42,
+            brainrot: 0.31,
+            lowEffort: 0.2,
+            educational: 0.15,
+            night: 0.27,
+            top3Share: 0.54,
+          },
+          topCategories: [
+            { name: "Comedy", share: 0.32 },
+            { name: "Gaming", share: 0.27 },
+            { name: "Learning", share: 0.18 },
+            { name: "Other", share: 0.23 },
+          ],
+          topChannels: [],
+          ghostSubs: 14,
+          tutorialsSaved: 6,
+          shortsCount: 54,
+          nightLikes: 23,
+          brainrotTitles: 39,
+          brainRotScore: 78,
+          tier: "A",
+          rarity: "Epic",
+          aura: -1240,
+          digitalAge: 19,
+          rizz: 61,
+          npc: 28,
+          mainCharacter: 72,
+          partial: false,
+        },
+      });
+    }
+  }, [demo, roast]);
+  const startAnalyze = async () => {
+    setBusy(true);
+    setError("");
+    setPath("/roast/analyzing");
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(apiError(data, "Analysis request failed."));
+      if (!data.analysisId) {
+        throw new Error(
+          "YouTube returned insufficient data for a roast. Check your liked videos, subscriptions and playlists, then try again.",
+        );
+      }
+      sessionStorage.setItem("roasttube:analysisId", data.analysisId);
+      const liveStats = (data.stats || null) as Stats | null;
+      setStats(liveStats);
+      if (data.partial !== undefined)
+        sessionStorage.setItem("roasttube:partial", String(data.partial));
+      const rr = await fetch("/api/roast", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: data.analysisId,
+          persona,
+          lang,
+          heat,
+        }),
+      });
+      const rd = await rr.json();
+      if (!rr.ok) throw new Error(apiError(rd, "Roast request failed."));
+      const liveRoast: Roast = { ...rd, stats: liveStats };
+      setRoast(liveRoast);
+      setPath(`/roast/result/${encodeURIComponent(liveRoast.slug)}`);
+      const entry: Saved = {
+        slug: liveRoast.slug,
+        content: liveRoast.content,
+        stats: liveStats,
+        persona,
+        lang,
+        heat,
+        at: new Date().toISOString(),
+      };
+      const next = [
+        entry,
+        ...readSaved(identity).filter((x) => x.slug !== liveRoast.slug),
+      ];
+      localStorage.setItem(storageKey(identity), JSON.stringify(next));
+      setSaved(next);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not analyze YouTube data.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  const generate = async () => {
+    if (demo) {
+      setRoast({ ...roast!, persona, lang, heat });
+      setPath("/roast/demo/analyzing");
+      return;
+    }
+    const analysisId = sessionStorage.getItem("roasttube:analysisId");
+    if (!analysisId) {
+      setError("No live analysis is available. Start again from Connect.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/roast", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisId, persona, lang, heat }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(apiError(data, "Roast request failed."));
+      const r: Roast = { ...data, stats };
+      setRoast(r);
+      setPath(`/roast/result/${encodeURIComponent(r.slug)}`);
+      const entry: Saved = {
+        slug: r.slug,
+        content: r.content,
+        stats,
+        persona,
+        lang,
+        heat,
+        at: new Date().toISOString(),
+      };
+      const next = [
+        entry,
+        ...readSaved(identity).filter((x) => x.slug !== r.slug),
+      ];
+      localStorage.setItem(storageKey(identity), JSON.stringify(next));
+      setSaved(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not generate roast.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const share = async () => {
+    if (!roast) return;
+    if (!demo && !shareConsent) {
+      setShareState(
+        "Please consent to making this roast public before sharing.",
+      );
+      return;
+    }
+    try {
+      if (!demo) {
+        const res = await fetch(
+          `/api/roast/${encodeURIComponent(roast.slug)}/share`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ public: true }),
+          },
+        );
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(apiError(d, "Share setting could not be updated."));
+        }
+        setRoast({ ...roast, isPublic: true });
+      }
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const link = `${origin}${demo ? "/roast/demo" : `/roast/result/${encodeURIComponent(roast.slug)}`}`;
+      if (navigator.share)
+        await navigator.share({
+          title: "My RoastTube roast",
+          text: roast.content.share_line,
+          url: link,
+        });
+      else {
+        await navigator.clipboard.writeText(link);
+        setShareState("Link copied. You can share your roast now.");
+      }
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      setShareState(e instanceof Error ? e.message : "Sharing failed.");
+    }
+  };
+  const makePrivate = async () => {
+    if (!roast) return;
+    try {
+      const res = await fetch(
+        `/api/roast/${encodeURIComponent(roast.slug)}/share`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ public: false }),
+        },
+      );
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(apiError(d, "Could not make this roast private."));
+      }
+      setRoast({ ...roast, isPublic: false });
+      setShareState("This roast is private now.");
+    } catch (e) {
+      setShareState(
+        e instanceof Error ? e.message : "Could not change visibility.",
+      );
+    }
+  };
+  const copyInvite = async () => {
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      await navigator.clipboard.writeText(
+        `${origin}/battle?code=${encodeURIComponent(battleCode || "")}`,
+      );
+      setShareState("Battle invitation copied.");
+    } catch {
+      setShareState(
+        "Could not copy. Select and copy the invitation URL from your browser.",
+      );
+    }
+  };
+  const removeSaved = (slug: string) => {
+    if (!window.confirm("Remove this roast from saved history on this device?"))
+      return;
+    const next = saved.filter((r) => r.slug !== slug);
+    setSaved(next);
+    localStorage.setItem(storageKey(identity), JSON.stringify(next));
+  };
+  const loadSaved = (r: Saved) => {
+    setRoast({
+      slug: r.slug,
+      content: r.content,
+      stats: r.stats,
+      degraded: false,
+      isPublic: false,
+      persona: r.persona,
+      lang: r.lang,
+      heat: r.heat,
+    });
+    setPath(
+      r.demo
+        ? "/roast/demo/result"
+        : `/roast/result/${encodeURIComponent(r.slug)}`,
+    );
+  };
+  const route = baseRoute(path);
+  let resultSlug: string | null = null;
+  try {
+    const match = routeMatchResult(path);
+    resultSlug = match ? decodeURIComponent(match) : null;
+  } catch {
+    resultSlug = null;
+  }
+  const resultReady = Boolean(
+    (route === "/roast/demo/result" && roast?.slug === "sample-demo") ||
+    (route.startsWith("/roast/result") && roast && roast.slug === resultSlug),
+  );
+  const storySlides = useMemo(
+    () =>
+      roast
+        ? [
+            {
+              eyebrow: "THE DIAGNOSIS",
+              title: roast.content.diagnosis.condition,
+              copy: roast.content.diagnosis.symptoms[0],
+            },
+            {
+              eyebrow: "THE RECEIPTS",
+              title: roast.content.receipts[0]?.label || "Exhibit A",
+              copy:
+                roast.content.receipts[0]?.joke || roast.content.evidence[0],
+            },
+            {
+              eyebrow: "THE RED FLAG",
+              title: "We need to talk.",
+              copy: roast.content.red_flag,
+            },
+            {
+              eyebrow: "THE PLOT TWIST",
+              title: "But there is hope.",
+              copy: roast.content.green_flag,
+            },
+            {
+              eyebrow: "THE FINAL WORD",
+              title: roast.content.tier_title,
+              copy: roast.content.share_line,
+            },
+          ]
+        : [],
+    [roast],
+  );
+  const beginLive = async () => {
+    if (status === "authenticated") {
+      setStep(1);
+    } else {
+      try {
+        await signIn("/roast");
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Google sign-in could not start.",
+        );
+      }
+    }
+  };
+  const prep =
+    route === "/roast" ||
+    route === "/roast/connect" ||
+    route === "/roast/select" ||
+    route === "/roast/confirm" ||
+    route === "/roast/demo";
+  const title =
+    step === 0
+      ? "Connect YouTube"
+      : step === 1
+        ? "Choose your roast"
+        : step === 2
+          ? "Review permissions"
+          : step === 3
+            ? "Final confirmation"
+            : "";
+  return (
+    <main className="max-w-[1200px] mx-auto px-4 pt-8">
+      {prep && (
+        <section className="pop-in">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="mono text-xs text-[#f22968] font-bold">
+                {demo
+                  ? "SAMPLE PREVIEW / NOT YOUR DATA"
+                  : "LIVE ROAST / GOOGLE READ-ONLY"}
+              </p>
+              <h1 className="display text-6xl md:text-7xl leading-none mt-2">
+                {title}
+              </h1>
+            </div>
+            <div className="flex gap-1">
+              {["Connect", "Select", "Review", "Confirm"].map((s, i) => (
+                <span
+                  key={s}
+                  className={`mono text-[10px] font-bold px-2 py-1 border border-black ${i <= step ? "bg-[#f22968] text-white" : "bg-[#fff8e8]"}`}
+                >
+                  {i + 1} {s}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="grid lg:grid-cols-[1.2fr_.8fr] gap-6 mt-7">
+            <div className="comic-card p-5 md:p-7">
+              {step === 0 && (
+                <>
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-[#f6ce47] border-2 border-black flex items-center justify-center">
+                      <ShieldCheck />
+                    </div>
+                    <div>
+                      <h2 className="display text-3xl">What we access</h2>
+                      <p className="mt-1 text-sm">
+                        Google’s authorization screen will list the exact
+                        requested scopes.
+                      </p>
+                    </div>
+                  </div>
+                  <ul className="grid sm:grid-cols-3 gap-3 my-6">
+                    {[
+                      ["Liked videos", "Your liked video metadata"],
+                      ["Subscriptions", "Channel names and IDs"],
+                      ["Playlists", "Playlist titles and item counts"],
+                    ].map(([a, b]) => (
+                      <li
+                        key={a}
+                        className="border-2 border-black bg-[#f5edda] p-3"
+                      >
+                        <Check className="text-[#278b6f]" />
+                        <b className="block mt-2">{a}</b>
+                        <span className="text-xs text-[#655b4c]">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="border-l-4 border-[#f22968] pl-3 text-sm font-semibold">
+                    We analyze all three collections together. The current
+                    service does not support deselecting individual sources.
+                    Access is read-only; we cannot change your YouTube account.
+                  </p>
+                  <div className="mt-5 flex gap-3 flex-wrap">
+                    <button
+                      className="comic-button"
+                      onClick={() => (demo ? setStep(1) : beginLive())}
+                    >
+                      {demo
+                        ? "Continue sample preview"
+                        : status === "authenticated"
+                          ? "Continue to selection"
+                          : "Sign in with Google"}{" "}
+                      <ArrowRight size={18} />
+                    </button>
+                    {!demo && (
+                      <p className="text-xs max-w-sm">
+                        {status === "authenticated"
+                          ? "You’re signed in. You may continue."
+                          : "Google sign-in is required for a live analysis."}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+              {step === 1 && (
+                <>
+                  <h2 className="display text-3xl">Pick the voice</h2>
+                  <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                    <label className="font-bold text-sm">
+                      Roast persona
+                      <select
+                        className="block mt-2 w-full border-2 border-black bg-[#fff8e8] p-3"
+                        value={persona}
+                        onChange={(e) => setPersona(e.target.value as Persona)}
+                      >
+                        {Object.entries(personaLabels).map(([v, l]) => (
+                          <option key={v} value={v}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="font-bold text-sm">
+                      Language
+                      <select
+                        className="block mt-2 w-full border-2 border-black bg-[#fff8e8] p-3"
+                        value={lang}
+                        onChange={(e) => setLang(e.target.value as Lang)}
+                      >
+                        {[
+                          ["en", "English"],
+                          ["tanglish", "Tanglish"],
+                          ["hinglish", "Hinglish"],
+                        ].map(([v, l]) => (
+                          <option key={v} value={v}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="mt-5">
+                    <p className="font-bold text-sm mb-2">Heat level</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(["mild", "medium", "max"] as Heat[]).map((h) => (
+                        <button
+                          key={h}
+                          onClick={() => setHeat(h)}
+                          className={`px-4 py-2 border-2 border-black font-extrabold ${heat === h ? "bg-[#f22968] text-white shadow-[3px_3px_0_#18130f]" : "bg-[#f5edda]"}`}
+                        >
+                          {human(h)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-7">
+                    <button
+                      className="comic-button secondary"
+                      onClick={() => setStep(0)}
+                    >
+                      <ArrowLeft size={17} /> Back
+                    </button>
+                    <button className="comic-button" onClick={() => setStep(2)}>
+                      Review choices <ArrowRight size={17} />
+                    </button>
+                  </div>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <h2 className="display text-3xl">Google permission review</h2>
+                  <p className="mt-2">
+                    Your account will be asked to allow these read-only sources.
+                    You can review and deny permissions on Google’s screen
+                    before anything is analyzed.
+                  </p>
+                  <div className="space-y-3 mt-5">
+                    {[
+                      [
+                        "Liked videos",
+                        "Used to calculate topic and format patterns",
+                      ],
+                      [
+                        "Subscriptions",
+                        "Used to compare subscriptions with liked channels",
+                      ],
+                      [
+                        "Playlists",
+                        "Used to identify saved tutorial collections",
+                      ],
+                    ].map(([a, b]) => (
+                      <div
+                        key={a}
+                        className="flex items-start gap-3 border-2 border-black bg-[#f5edda] p-3"
+                      >
+                        <Check className="text-[#278b6f] shrink-0" />
+                        <div>
+                          <b>{a}</b>
+                          <p className="text-sm">{b}</p>
+                        </div>
+                        <span className="mono text-[10px] ml-auto">
+                          READ ONLY
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs mt-4">
+                    Sources are analyzed together. Individual source deselection
+                    is not available in this backend. No view history or
+                    watch-time access is requested.
+                  </p>
+                  <div className="flex gap-2 mt-5">
+                    <button
+                      className="comic-button secondary"
+                      onClick={() => setStep(1)}
+                    >
+                      <ArrowLeft size={17} /> Back
+                    </button>
+                    <button className="comic-button" onClick={() => setStep(3)}>
+                      Review final choices <ArrowRight size={17} />
+                    </button>
+                  </div>
+                </>
+              )}
+              {step === 3 && (
+                <>
+                  <h2 className="display text-3xl">Almost there.</h2>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    {[
+                      ["Persona", personaLabels[persona]],
+                      ["Language", human(lang)],
+                      ["Heat", human(heat)],
+                      ["Access", "Read-only"],
+                    ].map(([a, b]) => (
+                      <div
+                        key={a}
+                        className="border-2 border-black bg-[#f5edda] p-3"
+                      >
+                        <small className="mono text-xs">
+                          {a.toUpperCase()}
+                        </small>
+                        <b className="block mt-1">{b}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="flex gap-3 mt-5 p-3 border-2 border-black bg-[#fff8e8] text-sm">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="accent-[#f22968] mt-1"
+                    />{" "}
+                    I understand this is a playful roast based on authorized
+                    YouTube data. I can revoke access and delete my RoastTube
+                    data at any time.
+                  </label>
+                  <div className="flex gap-2 mt-5">
+                    <button
+                      className="comic-button secondary"
+                      onClick={() => setStep(2)}
+                    >
+                      <ArrowLeft size={17} /> Back
+                    </button>
+                    <button
+                      className="comic-button"
+                      disabled={!consent || busy}
+                      onClick={demo ? generate : startAnalyze}
+                    >
+                      {busy ? (
+                        <LoaderCircle className="animate-spin" />
+                      ) : (
+                        "Start my roast"
+                      )}{" "}
+                      <Flame size={18} />
+                    </button>
+                  </div>
+                </>
+              )}
+              {error && (
+                <div
+                  role="alert"
+                  className="mt-5 p-3 bg-[#ffe3e5] border-2 border-[#ed3346] text-sm font-bold"
+                >
+                  {error}
+                </div>
+              )}
+            </div>
+            <aside className="space-y-4">
+              <div className="comic-card bg-[#f6ce47] p-5">
+                <h3 className="display text-3xl">Your data, your call.</h3>
+                <p className="text-sm mt-2">
+                  You can revoke Google access in your account settings.
+                  RoastTube offers data deletion from Privacy at any time.
+                </p>
+                <Link
+                  className="inline-block underline font-bold mt-3"
+                  href="/privacy"
+                >
+                  Read the privacy details
+                </Link>
+              </div>
+              <div className="comic-card p-5">
+                <LockKeyhole />
+                <h3 className="font-extrabold mt-2">No history scraping.</h3>
+                <p className="text-sm mt-1">
+                  The read-only API provides likes, subscriptions and playlists.
+                  We do not claim to see your viewing history or watch hours.
+                </p>
+              </div>
+            </aside>
+          </div>
+        </section>
+      )}
+      {route === "/roast/demo/analyzing" && (
+        <section className="comic-card max-w-3xl mx-auto p-8 my-8 text-center">
+          <p className="mono text-xs text-[#f22968]">
+            SAMPLE PREVIEW / NO GOOGLE DATA ACCESSED
+          </p>
+          <img
+            src="/images/play-cat-cutout.webp"
+            alt=""
+            className="w-36 h-36 object-contain mx-auto my-5"
+          />
+          <h1 className="display text-6xl">Preparing the receipts.</h1>
+          <p className="mt-4 font-semibold">
+            Loading an illustrative roast. This is not a live analysis.
+          </p>
+          <LoaderCircle
+            className="animate-spin mx-auto mt-6"
+            aria-label="Loading sample"
+          />
+        </section>
+      )}
+      {route === "/roast/analyzing" && (
+        <section className="comic-card max-w-2xl mx-auto p-8 text-center">
+          <h1 className="display text-6xl">Analysis in progress</h1>
+          <p className="mt-3">
+            Waiting for the live YouTube analysis response. No made-up progress
+            meter here.
+          </p>
+          <button
+            className="comic-button mt-5"
+            onClick={startAnalyze}
+            disabled={busy}
+          >
+            {busy ? "Analyzing your collections…" : "Retry analysis"}
+          </button>
+          {error && <p role="alert">{error}</p>}
+        </section>
+      )}
+      {route.startsWith("/roast/result") && !resultReady && loadingShared && (
+        <section
+          aria-label="Loading roast"
+          className="comic-card max-w-3xl mx-auto p-6 mt-8 animate-pulse"
+        >
+          <div className="h-5 w-36 bg-[#e5d8c2]" />
+          <div className="h-12 w-2/3 bg-[#e5d8c2] mt-4" />
+          <div className="h-24 w-full bg-[#e5d8c2] mt-5" />
+          <div className="h-10 w-1/2 bg-[#e5d8c2] mt-5" />
+        </section>
+      )}
+      {route.startsWith("/roast/result") && !resultReady && error && (
+        <section
+          role="alert"
+          className="comic-card max-w-2xl mx-auto p-7 mt-8 bg-[#ffe3e5]"
+        >
+          <h1 className="display text-4xl">Roast unavailable</h1>
+          <p className="mt-2 font-semibold">{error}</p>
+          <button
+            className="comic-button mt-4"
+            onClick={() => {
+              setError("");
+              setLoadAttempt((v) => v + 1);
+            }}
+          >
+            Try again
+          </button>
+        </section>
+      )}
+      {resultReady && roast && (
+        <Result
+          roast={roast}
+          demo={demo || roast.slug === "sample-demo"}
+          consent={shareConsent}
+          onShare={share}
+          onPrivate={makePrivate}
+          shareState={shareState}
+          onDownload={() => download("roasttube-report.txt", reportText(roast))}
+          onStory={() => {
+            setStoryIndex(0);
+            setPath("/story");
+          }}
+          onBattle={() => setPath("/battle")}
+          onConsentChange={setShareConsent}
+        />
+      )}
+      {route === "/story" && roast && (
+        <section className="comic-card mt-8 p-6 max-w-3xl mx-auto text-center">
+          <p className="mono text-xs text-[#f22968]">
+            STORY MODE {roast.slug === "sample-demo" ? "· DEMO ONLY" : ""} ·{" "}
+            {storyIndex + 1}/{storySlides.length}
+          </p>
+          <h2 className="display text-6xl mt-2">
+            {storySlides[storyIndex]?.eyebrow}
+          </h2>
+          <div className="bg-[#f6ce47] border-2 border-black p-8 mt-5">
+            <h3 className="display text-4xl">
+              {storySlides[storyIndex]?.title}
+            </h3>
+            <p className="text-lg font-semibold mt-3">
+              {storySlides[storyIndex]?.copy}
+            </p>
+          </div>
+          <div className="flex justify-between mt-5">
+            <button
+              className="comic-button secondary"
+              onClick={() => setStoryIndex(Math.max(0, storyIndex - 1))}
+              disabled={storyIndex === 0}
+            >
+              <ChevronLeft /> Previous
+            </button>
+            <button
+              className="comic-button"
+              onClick={() =>
+                storyIndex === storySlides.length - 1
+                  ? setPath(
+                      roast.slug === "sample-demo"
+                        ? "/roast/demo/result"
+                        : `/roast/result/${roast.slug}`,
+                    )
+                  : setStoryIndex(storyIndex + 1)
+              }
+            >
+              {storyIndex === storySlides.length - 1 ? "Back to roast" : "Next"}{" "}
+              <ChevronRight />
+            </button>
+          </div>
+        </section>
+      )}
+      {route === "/story" && !roast && (
+        <section className="comic-card mt-8 p-8 text-center">
+          <h1 className="display text-5xl">A story needs a roast first.</h1>
+          <p className="mt-2">
+            Try the labeled sample preview or connect YouTube for a live one.
+          </p>
+          <Link href="/roast/demo" className="comic-button mt-5 no-underline">
+            Open sample preview
+          </Link>
+        </section>
+      )}
+      {route === "/roasts" && (
+        <section className="mt-8">
+          <p className="mono text-xs text-[#f22968]">LOCAL HISTORY</p>
+          <h1 className="display text-6xl">My roasts</h1>
+          <p className="mt-2 font-semibold">
+            Saved on this device only · scoped to{" "}
+            {identity === "visitor"
+              ? "this browser visitor"
+              : data?.user?.firstName || "your signed-in account"}
+            . This is not a server-side roast list.
+          </p>
+          {saved.length === 0 ? (
+            <div className="comic-card mt-6 p-8 text-center">
+              <h2 className="display text-4xl">No saved roasts yet.</h2>
+              <p>Make a live roast or try a clearly labeled sample preview.</p>
+              <Link
+                href="/roast/demo"
+                className="comic-button mt-4 no-underline"
+              >
+                Try sample roast
+              </Link>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4 mt-6">
+              {saved.map((r) => (
+                <article key={r.slug} className="comic-card p-5">
+                  <div className="flex justify-between gap-2">
+                    <div>
+                      <p className="mono text-xs">
+                        {r.demo
+                          ? "DEMO · NOT REAL DATA"
+                          : "SAVED ON THIS DEVICE"}
+                      </p>
+                      <h2 className="display text-3xl">
+                        {r.content.tier_title}
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => removeSaved(r.slug)}
+                      aria-label="Delete saved roast"
+                      className="border-2 border-black p-2 h-fit bg-[#ffe3e5]"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                  <p className="text-sm mt-2 line-clamp-2">
+                    {r.content.share_line}
+                  </p>
+                  <button
+                    className="comic-button mt-4"
+                    onClick={() => loadSaved(r)}
+                  >
+                    Open roast <ArrowRight size={17} />
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+      {route === "/battle" && (
+        <Battle
+          roast={roast}
+          demo={demo || roast?.slug === "sample-demo"}
+          onGenerate={async () => {
+            if (!roast) {
+              setError("Make or open a roast before starting a battle.");
+              return;
+            }
+            if (demo || roast.slug === "sample-demo") {
+              setError(
+                "Battle invitations require a live roast. Demo mode cannot create invites.",
+              );
+              return;
+            }
+            setBusy(true);
+            try {
+              const analysisId = sessionStorage.getItem("roasttube:analysisId");
+              const res = await fetch("/api/battle", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ analysisId, persona, lang, heat }),
+              });
+              const d = await res.json();
+              if (!res.ok)
+                throw new Error(apiError(d, "Could not create battle."));
+              setBattleCode(
+                d.code || d.invitationCode || d.invitation?.code || "",
+              );
+            } catch (e) {
+              setError(
+                e instanceof Error ? e.message : "Battle request failed.",
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+          battleCode={battleCode}
+          onCode={setBattleCode}
+          consent={battleConsent}
+          onConsent={setBattleConsent}
+          busy={busy}
+          error={error}
+          onCopy={copyInvite}
+          onClear={() => setError("")}
+        />
+      )}
+      {route === "/roast/connect" && status !== "authenticated" && (
+        <div className="sr-only" aria-live="polite">
+          Sign in with Google to start a live roast.
+        </div>
+      )}
+    </main>
+  );
+}
+
+function routeMatchResult(path: string) {
+  const m = path.match(/^\/roast\/result\/([^/?#]+)/);
+  return m?.[1] || null;
+}
+function Result({
+  roast: r,
+  demo,
+  consent,
+  onShare,
+  onPrivate,
+  shareState,
+  onDownload,
+  onStory,
+  onBattle,
+  onConsentChange,
+}: {
+  roast: Roast;
+  demo: boolean;
+  consent: boolean;
+  onShare: () => void;
+  onPrivate: () => void;
+  shareState: string;
+  onDownload: () => void;
+  onStory: () => void;
+  onBattle: () => void;
+  onConsentChange: (v: boolean) => void;
+}) {
+  const st = r.stats;
+  return (
+    <section className="mt-8 pop-in">
+      {demo && (
+        <div className="mb-5 border-2 border-[#a22646] bg-[#ffe3e8] p-3 font-extrabold text-sm">
+          SAMPLE DEMO — all scores, categories, receipts and roast copy below
+          are illustrative, not based on your YouTube account.
+        </div>
+      )}
+      {!demo && r.degraded && (
+        <div className="mb-5 border-2 border-[#b96a05] bg-[#fff0c8] p-3 font-bold text-sm">
+          The roast service returned a degraded result. The content shown is the
+          service response and may be limited.
+        </div>
+      )}
+      {!demo && st?.partial && (
+        <div className="mb-5 border-2 border-[#b96a05] bg-[#fff0c8] p-3 font-bold text-sm">
+          Partial analysis: one or more YouTube data sources were unavailable.
+          Treat these statistics as incomplete.
+        </div>
+      )}
+      <div className="grid lg:grid-cols-[.72fr_1.28fr] gap-5">
+        <article className="comic-card bg-[#18130f] text-[#fff8e8] p-5 relative overflow-hidden">
+          <p className="mono text-xs text-[#f6ce47]">
+            YOUR BRAINROT SCORE {demo ? "· DEMO" : ""}
+          </p>
+          <div className="flex items-end gap-1 mt-2">
+            <strong className="display text-[108px] leading-[.85] text-[#f22968]">
+              {st?.brainRotScore ?? "—"}
+            </strong>
+            <span className="display text-4xl mb-1">/100</span>
+          </div>
+          <div className="h-4 border-2 border-[#fff8e8] mt-4">
+            <div
+              className="h-full bg-[#f22968]"
+              style={{
+                width: `${Math.max(0, Math.min(100, st?.brainRotScore || 0))}%`,
+              }}
+            />
+          </div>
+          <div className="flex justify-between mono text-xs mt-3">
+            <span>Tier {st?.tier ?? "—"}</span>
+            <span>{st?.rarity ?? "—"}</span>
+          </div>
+          <h2 className="display text-3xl mt-6">{r.content.tier_title}</h2>
+          <p className="text-sm mt-2 text-[#d6c9b5]">
+            {r.content.aura_comment}
+          </p>
+          <img
+            className="w-28 h-28 object-contain absolute right-2 bottom-2 opacity-90"
+            src="/images/pixel-cat.webp"
+            alt="Pixel cat illustration"
+          />
+        </article>
+        <article className="comic-card p-5 md:p-7">
+          <p className="mono text-xs text-[#f22968]">
+            THE ROAST · {personaLabels[r.persona]}
+          </p>
+          <h1 className="display text-5xl mt-2">
+            {r.content.diagnosis.condition}
+          </h1>
+          <p className="text-lg leading-relaxed mt-4 font-medium">
+            “{r.content.roast}”
+          </p>
+          <div className="grid md:grid-cols-2 gap-3 mt-5">
+            <div className="border-2 border-[#ed3346] bg-[#fff0ef] p-3">
+              <b className="text-[#c91e40]">RED FLAG</b>
+              <p className="text-sm mt-1">{r.content.red_flag}</p>
+            </div>
+            <div className="border-2 border-[#278b6f] bg-[#e6f6eb] p-3">
+              <b className="text-[#176d54]">GREEN FLAG</b>
+              <p className="text-sm mt-1">{r.content.green_flag}</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+        <Metric
+          title="Your data"
+          value={st ? `${st.counts.likes} likes` : "Unavailable"}
+          detail={
+            st
+              ? `${st.counts.subs} subscriptions · ${st.counts.playlists} playlists`
+              : "Stats were not returned by the service"
+          }
+        />
+        <Metric
+          title="Quick clips"
+          value={st ? String(st.shortsCount) : "—"}
+          detail="Classified from liked-video metadata"
+        />
+        <Metric
+          title="Night likes"
+          value={st ? String(st.nightLikes) : "—"}
+          detail="Likes around midnight hours"
+        />
+        <Metric
+          title="Saved tutorials"
+          value={st ? String(st.tutorialsSaved) : "—"}
+          detail="Matched from playlists and likes"
+        />
+      </div>
+      <div className="grid md:grid-cols-[1fr_1fr] gap-5 mt-5">
+        <article className="comic-card p-5">
+          <h2 className="display text-3xl">Receipts</h2>
+          {r.content.receipts.map((x, i) => (
+            <div key={x.id} className="border-t border-black/20 py-3 mt-2">
+              <b className="text-sm">
+                {String(i + 1).padStart(2, "0")} / {x.label}
+              </b>
+              <p className="text-sm mt-1">{x.joke}</p>
+            </div>
+          ))}
+        </article>
+        <article className="comic-card p-5">
+          <h2 className="display text-3xl">Your taste, at a glance</h2>
+          {st?.topCategories?.length ? (
+            <div className="mt-3 space-y-3">
+              {st.topCategories.map((c) => (
+                <div key={c.name}>
+                  <div className="flex justify-between text-sm font-bold">
+                    <span>{c.name}</span>
+                    <span>{Math.round(c.share * 100)}%</span>
+                  </div>
+                  <div className="h-3 border border-black mt-1">
+                    <div
+                      className="h-full bg-[#f22968]"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, c.share * 100))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm mt-3">
+              No category breakdown was included in this response.
+            </p>
+          )}
+          <p className="mt-4 text-xs text-[#63594e]">
+            Based on the API’s read-only analysis of likes, subscriptions and
+            playlists. No viewing history or watch-time claim.
+          </p>
+        </article>
+      </div>
+      <div className="flex flex-wrap gap-3 mt-5">
+        <Link href="/" className="comic-button secondary no-underline">
+          <ArrowLeft size={17} /> Home
+        </Link>
+        <button className="comic-button" onClick={onShare}>
+          <Share2 size={17} /> Share / copy link
+        </button>
+        {!demo && r.isPublic && (
+          <button className="comic-button secondary" onClick={onPrivate}>
+            Make private
+          </button>
+        )}
+        <button className="comic-button secondary" onClick={onDownload}>
+          <Download size={17} /> Download text report
+        </button>
+        <button className="comic-button secondary" onClick={onStory}>
+          Story mode
+        </button>
+        <button className="comic-button secondary" onClick={onBattle}>
+          <Swords size={17} /> Battle
+        </button>
+      </div>
+      {shareState && (
+        <p className="mt-3 font-bold text-sm" role="status">
+          {shareState}
+        </p>
+      )}
+      {!demo && (
+        <label className="block mt-4 text-xs">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => onConsentChange(e.target.checked)}
+          />{" "}
+          I consent to making this roast public when using Share. Share updates
+          the service visibility before creating a share link.
+        </label>
+      )}
+    </section>
+  );
+}
+function Metric({
+  title,
+  value,
+  detail,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <article className="comic-card p-4">
+      <p className="mono text-[10px]">{title.toUpperCase()}</p>
+      <strong className="display text-4xl block mt-1">{value}</strong>
+      <p className="text-xs mt-1">{detail}</p>
+    </article>
+  );
+}
+function Battle({
+  roast,
+  demo,
+  onGenerate,
+  battleCode,
+  onCode,
+  consent,
+  onConsent,
+  busy,
+  error,
+  onCopy,
+  onClear,
+}: {
+  roast: Roast | null;
+  demo: boolean;
+  onGenerate: () => void;
+  battleCode: string;
+  onCode: (v: string) => void;
+  consent: boolean;
+  onConsent: (v: boolean) => void;
+  busy: boolean;
+  error: string;
+  onCopy: () => void;
+  onClear: () => void;
+}) {
+  const [path, setPath] = useLocation();
+  const [joinError, setJoinError] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [outcome, setOutcome] = useState<BattleResult | null>(null);
+  const [sampleOutcome, setSampleOutcome] = useState(false);
+  const join = async () => {
+    if (joining || !consent || !battleCode.trim()) return;
+    setJoinError("");
+    if (demo) {
+      setJoinError(
+        "Sample mode does not send battle invitations. Start a live roast to join a friend.",
+      );
+      return;
+    }
+    const analysisId = sessionStorage.getItem("roasttube:analysisId");
+    if (!analysisId) {
+      setJoinError("Make a live roast before joining a battle.");
+      return;
+    }
+    setJoining(true);
+    try {
+      const res = await fetch(
+        `/api/battle/${encodeURIComponent(battleCode)}/join`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ analysisId, consent }),
+        },
+      );
+      const d = await res.json();
+      if (!res.ok) throw new Error(apiError(d, "Could not join this battle."));
+      if (d.status === "done" && d.result) {
+        setOutcome(d.result);
+        setSampleOutcome(false);
+        setJoinError("Battle accepted. Your comparison is shown below.");
+      } else {
+        setJoinError(
+          "The battle has not completed. Please check your invitation and try again.",
+        );
+      }
+    } catch (e) {
+      setJoinError(e instanceof Error ? e.message : "Could not join battle.");
+    } finally {
+      setJoining(false);
+    }
+  };
+  return (
+    <section className="mt-8">
+      <div className="grid lg:grid-cols-[1fr_.78fr] gap-5">
+        <article className="comic-card p-6">
+          <p className="mono text-xs text-[#f22968]">
+            FRIENDLY COMPETITION / LIVE INVITE
+          </p>
+          <h1 className="display text-6xl mt-2">Battle a friend.</h1>
+          <p className="mt-3">
+            Who has the more cooked feed? Create a challenge from your live
+            analysis—or join a friend’s code.
+          </p>
+          {roast ? (
+            <p className="mt-3 font-bold">
+              Current roast: {roast.content.tier_title}
+              {demo ? " · DEMO (invite unavailable)" : ""}
+            </p>
+          ) : (
+            <p className="mt-3 font-bold">
+              Make a live roast before creating a challenge.
+            </p>
+          )}
+          <button
+            onClick={onGenerate}
+            disabled={busy || demo}
+            className="comic-button mt-5"
+          >
+            {busy ? "Creating invite…" : "Create battle invite"}{" "}
+            <Swords size={18} />
+          </button>
+          {battleCode && (
+            <div className="mt-4 border-2 border-black bg-[#f6ce47] p-4">
+              <b>Invitation code</b>
+              <p className="mono text-xl font-bold mt-2">{battleCode}</p>
+              <button onClick={onCopy} className="comic-button secondary mt-3">
+                <Copy size={16} /> Copy invitation
+              </button>
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="mt-3 text-[#b01832] font-bold">
+              {error}
+            </p>
+          )}
+        </article>
+        <article className="comic-card bg-[#f6ce47] p-6">
+          <h2 className="display text-4xl">Join the roast-off</h2>
+          <label className="font-bold text-sm block mt-4">
+            Friend’s invite code
+            <input
+              className="block w-full border-2 border-black p-3 bg-[#fff8e8] mt-2"
+              value={battleCode}
+              onChange={(e) => onCode(e.target.value)}
+              placeholder="Paste invite code"
+            />
+          </label>
+          <label className="flex gap-2 mt-4 text-sm">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => onConsent(e.target.checked)}
+            />{" "}
+            I consent to sharing my roast result with the inviter for this
+            battle.
+          </label>
+          <button
+            onClick={join}
+            disabled={!battleCode.trim() || !consent || joining || demo}
+            className="comic-button mt-4"
+          >
+            {joining ? "Joining…" : "Join battle"} <ArrowRight size={17} />
+          </button>
+          {joinError && (
+            <p role="status" className="mt-3 font-bold text-sm">
+              {joinError}
+            </p>
+          )}
+          <button
+            onClick={() => {
+              onClear();
+              setPath("/roast");
+            }}
+            className="block underline mt-6 text-sm font-bold"
+          >
+            Start a live roast first
+          </button>
+          <p className="text-xs mt-5">
+            The invite uses the existing battle service. Demo previews cannot
+            create invitations.
+          </p>
+        </article>
+      </div>
+      <button
+        className="comic-button secondary mt-6"
+        onClick={() => {
+          setOutcome(sampleBattle);
+          setSampleOutcome(true);
+        }}
+      >
+        Preview a sample battle result
+      </button>
+      {outcome && <BattleOutcome result={outcome} sample={sampleOutcome} />}
+    </section>
+  );
+}

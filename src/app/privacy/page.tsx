@@ -1,107 +1,211 @@
-import Link from "next/link";
-import { ArrowLeft, Shield } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Link } from "@/lib/navigation";
+import { useSession } from "@/components/providers/AuthProvider";
+import { apiError } from "@/lib/api-error";
+import { ArrowLeft, Trash2 } from "lucide-react";
 
 export default function PrivacyPage() {
+  const { data } = useSession();
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const erase = async () => {
+    if (confirm !== "DELETE" || busy || !data?.user) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/me", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok)
+        throw new Error(apiError(d, "Deletion could not be completed."));
+      const identity = data?.user?.googleSub || data?.user?.email;
+      if (identity) localStorage.removeItem(`roasttube:saved:${identity}`);
+      sessionStorage.removeItem("roasttube:analysisId");
+      setMessage(
+        "Your RoastTube account data and this device’s saved roast list were removed.",
+      );
+      setConfirm("");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Deletion request failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12 text-slate-300">
+    <main className="max-w-4xl mx-auto px-4 py-10">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-8 transition-colors"
+        className="inline-flex items-center gap-2 font-bold text-sm mb-7"
       >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to RoastTube</span>
+        <ArrowLeft size={16} /> Back to RoastTube
       </Link>
-
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-rose-500/10 text-rose-400 rounded-xl">
-          <Shield className="w-6 h-6" />
+      <section className="comic-card p-6 md:p-9">
+        <p className="mono text-xs text-[#f22968]">
+          YOUR DATA / NO FUNNY BUSINESS
+        </p>
+        <h1 className="display text-6xl mt-2">Privacy policy</h1>
+        <p className="mt-3 text-sm text-[#62584b]">
+          RoastTube analyzes limited YouTube data only after you authorize
+          Google read-only access.
+        </p>
+        <div className="space-y-7 text-sm leading-relaxed border-t border-black/20 pt-6 mt-6">
+          <section>
+            <h2 className="display text-3xl mb-2">
+              01 / Information we access
+            </h2>
+            <p>
+              When you sign in with Google, RoastTube requests read-only YouTube
+              access through the official{" "}
+              <code className="bg-[#f5edda] px-1">
+                https://www.googleapis.com/auth/youtube.readonly
+              </code>{" "}
+              scope, along with basic profile identity (your first name and
+              avatar URL). The service analyzes liked videos, subscriptions and
+              playlists. We never receive or store your Google password. The API
+              does not provide your watch history or watch hours to RoastTube.
+            </p>
+          </section>
+          <section>
+            <h2 className="display text-3xl mb-2">02 / How it is used</h2>
+            <p>
+              Your liked videos, subscriptions, and playlists are processed to
+              calculate aggregated statistics (e.g. category distribution, brain
+              rot score). A sanitized, non-sensitive sample of titles and
+              channel names is sent to an AI language model provider solely to
+              generate your humor roast. We do not sell your data, we display no
+              third-party advertisements, and we do not use your data to train
+              general machine learning models.
+            </p>
+          </section>
+          <section>
+            <h2 className="display text-3xl mb-2">
+              03 / Retention and storage
+            </h2>
+            <ul className="list-disc list-inside space-y-2">
+              <li>
+                Raw YouTube responses are held in server memory during
+                processing and are not saved as persistent raw history.
+              </li>
+              <li>
+                Encrypted sample data is stored using AES-256-GCM in cache for
+                at most 24 hours to support persona/language changes without
+                re-querying YouTube.
+              </li>
+              <li>
+                Server-held roasts and derived statistics are retained for at
+                most 30 days.
+              </li>
+              <li>
+                Your “My roasts” list is saved in this browser on this device
+                and scoped to the current account identity. It is not a
+                server-side list.
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2 className="display text-3xl mb-2">
+              04 / Google API Limited Use
+            </h2>
+            <p className="border-2 border-black bg-[#f6ce47] p-4">
+              RoastTube’s use and transfer to any other app of information
+              received from Google APIs will adhere to the{" "}
+              <a
+                className="underline font-bold"
+                target="_blank"
+                rel="noreferrer"
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </p>
+          </section>
+          <section>
+            <h2 className="display text-3xl mb-2">
+              05 / Your control and deletion
+            </h2>
+            <p>
+              You can revoke RoastTube access at any time in{" "}
+              <a
+                className="underline font-bold"
+                target="_blank"
+                rel="noreferrer"
+                href="https://myaccount.google.com/permissions"
+              >
+                Google Account Permissions
+              </a>
+              . You can also ask RoastTube to delete server-held data below.
+              Browser-saved history can be removed from My roasts or cleared in
+              your browser storage.
+            </p>
+          </section>
+          {data?.user && (
+            <section className="border-2 border-[#ed3346] bg-[#fff0ef] p-5">
+              <h2 className="display text-3xl flex gap-2 items-center">
+                <Trash2 /> Delete my RoastTube data
+              </h2>
+              <p className="mt-2">
+                This permanently deletes the data associated with your account
+                on RoastTube. Enter <b>DELETE</b> to confirm. This action is
+                for your signed-in account, not the illustrative sample data.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <input
+                  aria-label="Type DELETE to confirm"
+                  className="border-2 border-black bg-[#fff8e8] p-3"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="Type DELETE"
+                />
+                <button
+                  className="comic-button !bg-[#ed3346]"
+                  disabled={busy || confirm !== "DELETE"}
+                  onClick={erase}
+                >
+                  {busy ? "Deleting…" : "Delete my data"}
+                </button>
+              </div>
+              {message && (
+                <p role="status" className="mt-3 font-bold">
+                  {message}
+                </p>
+              )}
+            </section>
+          )}
+          <section>
+            <h2 className="display text-3xl mb-2">06 / Third-party policies</h2>
+            <p>
+              RoastTube uses YouTube API Services. By using this application you
+              agree to the{" "}
+              <a
+                className="underline font-bold"
+                target="_blank"
+                rel="noreferrer"
+                href="https://www.youtube.com/t/terms"
+              >
+                YouTube Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                className="underline font-bold"
+                target="_blank"
+                rel="noreferrer"
+                href="https://policies.google.com/privacy"
+              >
+                Google Privacy Policy
+              </a>
+              .
+            </p>
+          </section>
         </div>
-        <h1 className="text-3xl font-extrabold text-white">Privacy Policy</h1>
-      </div>
-
-      <div className="space-y-6 text-sm leading-relaxed border-t border-slate-800 pt-6">
-        <section>
-          <h2 className="text-lg font-bold text-white mb-2">1. Information We Access</h2>
-          <p>
-            When you sign in with Google, RoastTube requests read-only access to your YouTube data via the official{" "}
-            <code className="text-rose-400 bg-slate-900 px-1 py-0.5 rounded">https://www.googleapis.com/auth/youtube.readonly</code>{" "}
-            scope, along with basic profile identity (your first name and avatar URL). We never receive or store your Google password.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-bold text-white mb-2">2. How We Use Your Data</h2>
-          <p>
-            Your liked videos, subscriptions, and playlists are processed to calculate aggregated statistics (e.g. category distribution, brain rot score). A sanitized, non-sensitive sample of titles and channel names is sent to an AI language model provider solely to generate your humor roast. We do not sell your data, we display no third-party advertisements, and we do not use your data to train general machine learning models.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-bold text-white mb-2">3. Data Retention and Storage</h2>
-          <ul className="list-disc list-inside space-y-1 text-slate-400">
-            <li><strong>Raw YouTube responses:</strong> Kept in server memory only during your request and never saved to persistent storage.</li>
-            <li><strong>Encrypted sample:</strong> Stored using AES-256-GCM in cache for at most 24 hours to allow language/persona switching without re-querying YouTube.</li>
-            <li><strong>Roasts and derived stats:</strong> Retained for at most 30 days.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-bold text-white mb-2">4. Google API Limited Use Disclosure</h2>
-          <p className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-slate-200">
-            RoastTube&apos;s use and transfer to any other app of information received from Google APIs will adhere to the{" "}
-            <a
-              href="https://developers.google.com/terms/api-services-user-data-policy"
-              target="_blank"
-              rel="noreferrer"
-              className="text-rose-400 underline"
-            >
-              Google API Services User Data Policy
-            </a>
-            , including the Limited Use requirements.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-bold text-white mb-2">5. User Control & Deletion</h2>
-          <p>
-            You can delete all your stored stats and roasts at any time through the app. You can also revoke RoastTube&apos;s access immediately at any time via your{" "}
-            <a
-              href="https://myaccount.google.com/permissions"
-              target="_blank"
-              rel="noreferrer"
-              className="text-rose-400 underline"
-            >
-              Google Account Permissions
-            </a>{" "}
-            page.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-bold text-white mb-2">6. Third-Party Policies</h2>
-          <p>
-            RoastTube utilizes YouTube API Services. By using RoastTube, users agree to be bound by the{" "}
-            <a
-              href="https://www.youtube.com/t/terms"
-              target="_blank"
-              rel="noreferrer"
-              className="text-rose-400 underline"
-            >
-              YouTube Terms of Service
-            </a>{" "}
-            and the{" "}
-            <a
-              href="https://policies.google.com/privacy"
-              target="_blank"
-              rel="noreferrer"
-              className="text-rose-400 underline"
-            >
-              Google Privacy Policy
-            </a>
-            .
-          </p>
-        </section>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
