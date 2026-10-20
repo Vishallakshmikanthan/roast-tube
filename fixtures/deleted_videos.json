@@ -1,0 +1,37 @@
+{
+  "name": "deleted_videos",
+  "likedItems": [
+    { "videoId": "active_vid_1", "publishedAt": "2026-03-01T10:00:00Z" },
+    { "videoId": "deleted_vid_2", "publishedAt": "2026-03-02T10:00:00Z" },
+    { "videoId": "private_vid_3", "publishedAt": "2026-03-03T10:00:00Z" },
+    { "videoId": "active_vid_4", "publishedAt": "2026-03-04T10:00:00Z" }
+  ],
+  "videoDetailsReturned": [
+    {
+      "id": "active_vid_1",
+      "snippet": {
+        "title": "Working Video 1",
+        "channelId": "ch_1",
+        "channelTitle": "Channel 1",
+        "categoryId": "20",
+        "tags": ["gaming"]
+      },
+      "contentDetails": {
+        "duration": "PT5M10S"
+      }
+    },
+    {
+      "id": "active_vid_4",
+      "snippet": {
+        "title": "Working Video 4",
+        "channelId": "ch_4",
+        "channelTitle": "Channel 4",
+        "categoryId": "28",
+        "tags": ["tech"]
+      },
+      "contentDetails": {
+        "duration": "PT12M45S"
+      }
+    }
+  ]
+}

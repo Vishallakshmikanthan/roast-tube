@@ -1,0 +1,185 @@
+{
+  "name": "student",
+  "likes": [
+    {
+      "id": "vid_s1",
+      "title": "Python in 100 Seconds",
+      "channelId": "ch_fireship",
+      "channelTitle": "Fireship",
+      "categoryId": "28",
+      "durationSec": 135,
+      "tags": ["python", "programming", "tutorial", "code"],
+      "likedAt": "2026-03-11T14:20:00Z"
+    },
+    {
+      "id": "vid_s2",
+      "title": "Full React 19 and Next.js Course for Beginners (12 Hours)",
+      "channelId": "ch_freecodecamp",
+      "channelTitle": "freeCodeCamp.org",
+      "categoryId": "27",
+      "durationSec": 43200,
+      "tags": ["react", "nextjs", "javascript", "tutorial"],
+      "likedAt": "2026-03-10T16:00:00Z"
+    },
+    {
+      "id": "vid_s3",
+      "title": "Leetcode Blind 75 Two Pointers in Python",
+      "channelId": "ch_neetcode",
+      "channelTitle": "NeetCode",
+      "categoryId": "27",
+      "durationSec": 980,
+      "tags": ["leetcode", "dsa", "algorithms", "interview"],
+      "likedAt": "2026-03-09T18:15:00Z"
+    },
+    {
+      "id": "vid_s4",
+      "title": "Git and GitHub Crash Course 2026",
+      "channelId": "ch_traversy",
+      "channelTitle": "Traversy Media",
+      "categoryId": "28",
+      "durationSec": 2400,
+      "tags": ["git", "github", "tutorial"],
+      "likedAt": "2026-03-08T11:30:00Z"
+    },
+    {
+      "id": "vid_s5",
+      "title": "lofi hip hop radio - beats to relax/study to",
+      "channelId": "ch_lofi",
+      "channelTitle": "Lofi Girl",
+      "categoryId": "10",
+      "durationSec": 7200,
+      "tags": ["lofi", "study", "beats"],
+      "likedAt": "2026-03-07T21:00:00Z"
+    },
+    {
+      "id": "vid_s6",
+      "title": "Calculus 3: Multiple Integrals Made Easy",
+      "channelId": "ch_trev",
+      "channelTitle": "TrevTutor",
+      "categoryId": "27",
+      "durationSec": 1540,
+      "tags": ["math", "calculus", "university"],
+      "likedAt": "2026-03-06T15:45:00Z"
+    },
+    {
+      "id": "vid_s7",
+      "title": "TypeScript Tutorial for Developers",
+      "channelId": "ch_fireship",
+      "channelTitle": "Fireship",
+      "categoryId": "28",
+      "durationSec": 620,
+      "tags": ["typescript", "tutorial", "webdev"],
+      "likedAt": "2026-03-05T10:10:00Z"
+    },
+    {
+      "id": "vid_s8",
+      "title": "How I Study 10 Hours a Day for Finals (Pomodoro)",
+      "channelId": "ch_study",
+      "channelTitle": "StudyTee",
+      "categoryId": "26",
+      "durationSec": 890,
+      "tags": ["studywithme", "productivity", "pomodoro"],
+      "likedAt": "2026-03-04T19:20:00Z"
+    },
+    {
+      "id": "vid_s9",
+      "title": "How to Build a SaaS in 24 Hours with AI",
+      "channelId": "ch_indie",
+      "channelTitle": "IndieDev",
+      "categoryId": "28",
+      "durationSec": 1420,
+      "tags": ["saas", "startup", "ai", "tutorial"],
+      "likedAt": "2026-03-03T17:35:00Z"
+    },
+    {
+      "id": "vid_s10",
+      "title": "Docker in 100 Seconds",
+      "channelId": "ch_fireship",
+      "channelTitle": "Fireship",
+      "categoryId": "28",
+      "durationSec": 140,
+      "tags": ["docker", "devops", "code"],
+      "likedAt": "2026-03-02T13:00:00Z"
+    },
+    {
+      "id": "vid_s11",
+      "title": "Day in the Life of a Google Software Engineer in Bengaluru",
+      "channelId": "ch_swe",
+      "channelTitle": "TechBrah",
+      "categoryId": "24",
+      "durationSec": 780,
+      "tags": ["swe", "google", "vlog"],
+      "likedAt": "2026-03-01T20:10:00Z"
+    },
+    {
+      "id": "vid_s12",
+      "title": "Dynamic Programming Masterclass",
+      "channelId": "ch_neetcode",
+      "channelTitle": "NeetCode",
+      "categoryId": "27",
+      "durationSec": 3200,
+      "tags": ["dsa", "dynamicprogramming", "algorithms"],
+      "likedAt": "2026-02-28T16:50:00Z"
+    },
+    {
+      "id": "vid_s13",
+      "title": "The Only Resume Template You Need for 2026 Tech Jobs",
+      "channelId": "ch_career",
+      "channelTitle": "CareerSparks",
+      "categoryId": "27",
+      "durationSec": 640,
+      "tags": ["resume", "jobs", "tech"],
+      "likedAt": "2026-02-27T12:20:00Z"
+    },
+    {
+      "id": "vid_s14",
+      "title": "Building a Fullstack Uber Clone in React Native",
+      "channelId": "ch_freecodecamp",
+      "channelTitle": "freeCodeCamp.org",
+      "categoryId": "27",
+      "durationSec": 21600,
+      "tags": ["reactnative", "clone", "tutorial"],
+      "likedAt": "2026-02-26T15:00:00Z"
+    },
+    {
+      "id": "vid_s15",
+      "title": "PostgreSQL Full Course - 4 Hours",
+      "channelId": "ch_freecodecamp",
+      "channelTitle": "freeCodeCamp.org",
+      "categoryId": "27",
+      "durationSec": 14400,
+      "tags": ["postgres", "sql", "database", "tutorial"],
+      "likedAt": "2026-02-25T11:10:00Z"
+    },
+    {
+      "id": "vid_s16",
+      "title": "Clean Code in Python: 10 Tips",
+      "channelId": "ch_traversy",
+      "channelTitle": "Traversy Media",
+      "categoryId": "28",
+      "durationSec": 750,
+      "tags": ["python", "cleancode", "tutorial"],
+      "likedAt": "2026-02-24T18:00:00Z"
+    }
+  ],
+  "subs": [
+    { "channelId": "ch_fireship", "title": "Fireship" },
+    { "channelId": "ch_freecodecamp", "title": "freeCodeCamp.org" },
+    { "channelId": "ch_neetcode", "title": "NeetCode" },
+    { "channelId": "ch_traversy", "title": "Traversy Media" },
+    { "channelId": "ch_lofi", "title": "Lofi Girl" },
+    { "channelId": "ch_trev", "title": "TrevTutor" },
+    { "channelId": "ch_study", "title": "StudyTee" },
+    { "channelId": "ch_indie", "title": "IndieDev" },
+    { "channelId": "ch_swe", "title": "TechBrah" },
+    { "channelId": "ch_career", "title": "CareerSparks" },
+    { "channelId": "ch_mit", "title": "MIT OpenCourseWare" }
+  ],
+  "playlists": [
+    { "title": "Tutorials to Watch (Someday)", "itemCount": 47 },
+    { "title": "DSA Preparation", "itemCount": 32 },
+    { "title": "Deep Focus Lo-Fi", "itemCount": 12 },
+    { "title": "Web Development 2026", "itemCount": 25 }
+  ],
+  "fetchedAt": "2026-03-11T19:00:00Z"
+}

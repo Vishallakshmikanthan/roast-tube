@@ -1,0 +1,31 @@
+{
+  "name": "empty",
+  "likes": [
+    {
+      "id": "vid_e1",
+      "title": "Welcome to YouTube",
+      "channelId": "ch_yt",
+      "channelTitle": "YouTube",
+      "categoryId": "27",
+      "durationSec": 60,
+      "tags": ["welcome"],
+      "likedAt": "2026-03-01T12:00:00Z"
+    },
+    {
+      "id": "vid_e2",
+      "title": "Relaxing Nature Sounds",
+      "channelId": "ch_nature",
+      "channelTitle": "Nature",
+      "categoryId": "10",
+      "durationSec": 300,
+      "tags": ["nature"],
+      "likedAt": "2026-03-02T12:00:00Z"
+    }
+  ],
+  "subs": [
+    { "channelId": "ch_yt", "title": "YouTube" },
+    { "channelId": "ch_music", "title": "YouTube Music" }
+  ],
+  "playlists": [],
+  "fetchedAt": "2026-03-12T12:00:00Z"
+}

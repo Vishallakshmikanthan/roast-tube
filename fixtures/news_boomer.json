@@ -1,0 +1,184 @@
+{
+  "name": "news_boomer",
+  "likes": [
+    {
+      "id": "vid_n1",
+      "title": "Prime Time Debate: Geopolitics and World Economy 2026",
+      "channelId": "ch_news1",
+      "channelTitle": "Global News 24/7",
+      "categoryId": "25",
+      "durationSec": 3600,
+      "tags": ["news", "debate", "politics"],
+      "likedAt": "2026-03-12T20:30:00Z"
+    },
+    {
+      "id": "vid_n2",
+      "title": "Stock Market Crash or Rally? Expert Analysis",
+      "channelId": "ch_finance",
+      "channelTitle": "Money Talks",
+      "categoryId": "25",
+      "durationSec": 1400,
+      "tags": ["stocks", "finance", "economy"],
+      "likedAt": "2026-03-11T21:10:00Z"
+    },
+    {
+      "id": "vid_n3",
+      "title": "Breaking: Budget 2026 Live Discussion and Highlights",
+      "channelId": "ch_news1",
+      "channelTitle": "Global News 24/7",
+      "categoryId": "25",
+      "durationSec": 5400,
+      "tags": ["budget", "breakingnews", "economy"],
+      "likedAt": "2026-03-10T19:40:00Z"
+    },
+    {
+      "id": "vid_n4",
+      "title": "Historical Documentary: The Fall of Ancient Empires",
+      "channelId": "ch_history",
+      "channelTitle": "History Channel Clips",
+      "categoryId": "27",
+      "durationSec": 2800,
+      "tags": ["history", "documentary"],
+      "likedAt": "2026-03-09T22:00:00Z"
+    },
+    {
+      "id": "vid_n5",
+      "title": "Morning Yoga and Breathing Exercises for Joint Pain",
+      "channelId": "ch_wellness",
+      "channelTitle": "Gentle Health",
+      "categoryId": "26",
+      "durationSec": 1800,
+      "tags": ["yoga", "health", "pranayama"],
+      "likedAt": "2026-03-08T06:15:00Z"
+    },
+    {
+      "id": "vid_n6",
+      "title": "1970s Golden Hits Nonstop Medley",
+      "channelId": "ch_retro",
+      "channelTitle": "Retro Melodies",
+      "categoryId": "10",
+      "durationSec": 4200,
+      "tags": ["retro", "classics", "music"],
+      "likedAt": "2026-03-07T21:30:00Z"
+    },
+    {
+      "id": "vid_n7",
+      "title": "Why Modern Phones Are Getting Too Complicated",
+      "channelId": "ch_tech_old",
+      "channelTitle": "Simple Tech Advice",
+      "categoryId": "28",
+      "durationSec": 820,
+      "tags": ["smartphones", "opinion", "tech"],
+      "likedAt": "2026-03-06T19:15:00Z"
+    },
+    {
+      "id": "vid_n8",
+      "title": "Gardening Tips for Home Balcony Vegetables",
+      "channelId": "ch_garden",
+      "channelTitle": "Urban Green Thumb",
+      "categoryId": "26",
+      "durationSec": 1100,
+      "tags": ["gardening", "plants", "balcony"],
+      "likedAt": "2026-03-05T07:20:00Z"
+    },
+    {
+      "id": "vid_n9",
+      "title": "Geopolitical Shift: New Alliances Explained",
+      "channelId": "ch_news1",
+      "channelTitle": "Global News 24/7",
+      "categoryId": "25",
+      "durationSec": 2100,
+      "tags": ["worldaffairs", "geopolitics"],
+      "likedAt": "2026-03-04T20:45:00Z"
+    },
+    {
+      "id": "vid_n10",
+      "title": "Old Melodies Live Concert 1985",
+      "channelId": "ch_retro",
+      "channelTitle": "Retro Melodies",
+      "categoryId": "10",
+      "durationSec": 3100,
+      "tags": ["nostalgia", "vintage"],
+      "likedAt": "2026-03-03T21:00:00Z"
+    },
+    {
+      "id": "vid_n11",
+      "title": "Health Benefits of Daily Walks",
+      "channelId": "ch_wellness",
+      "channelTitle": "Gentle Health",
+      "categoryId": "26",
+      "durationSec": 600,
+      "tags": ["walking", "health", "seniors"],
+      "likedAt": "2026-03-02T06:45:00Z"
+    },
+    {
+      "id": "vid_n12",
+      "title": "Fixed Deposits vs Mutual Funds: Safe Investment Guide",
+      "channelId": "ch_finance",
+      "channelTitle": "Money Talks",
+      "categoryId": "25",
+      "durationSec": 1250,
+      "tags": ["investment", "fd", "retirement"],
+      "likedAt": "2026-03-01T20:10:00Z"
+    },
+    {
+      "id": "vid_n13",
+      "title": "Rare Railway Journey Across Scenic Mountains",
+      "channelId": "ch_trains",
+      "channelTitle": "Rail Explorer",
+      "categoryId": "19",
+      "durationSec": 2400,
+      "tags": ["train", "travel", "documentary"],
+      "likedAt": "2026-02-28T19:30:00Z"
+    },
+    {
+      "id": "vid_n14",
+      "title": "Town Hall Debate on Local Civic Infrastructure",
+      "channelId": "ch_news1",
+      "channelTitle": "Global News 24/7",
+      "categoryId": "25",
+      "durationSec": 1950,
+      "tags": ["civic", "news", "debate"],
+      "likedAt": "2026-02-27T20:20:00Z"
+    },
+    {
+      "id": "vid_n15",
+      "title": "Classical Vocal Concert Live",
+      "channelId": "ch_retro",
+      "channelTitle": "Retro Melodies",
+      "categoryId": "10",
+      "durationSec": 4800,
+      "tags": ["classical", "music"],
+      "likedAt": "2026-02-26T21:40:00Z"
+    },
+    {
+      "id": "vid_n16",
+      "title": "Ancient Architecture and Temples Documentary",
+      "channelId": "ch_history",
+      "channelTitle": "History Channel Clips",
+      "categoryId": "27",
+      "durationSec": 2700,
+      "tags": ["temples", "architecture", "history"],
+      "likedAt": "2026-02-25T18:50:00Z"
+    }
+  ],
+  "subs": [
+    { "channelId": "ch_news1", "title": "Global News 24/7" },
+    { "channelId": "ch_finance", "title": "Money Talks" },
+    { "channelId": "ch_history", "title": "History Channel Clips" },
+    { "channelId": "ch_wellness", "title": "Gentle Health" },
+    { "channelId": "ch_retro", "title": "Retro Melodies" },
+    { "channelId": "ch_tech_old", "title": "Simple Tech Advice" },
+    { "channelId": "ch_garden", "title": "Urban Green Thumb" },
+    { "channelId": "ch_trains", "title": "Rail Explorer" },
+    { "channelId": "ch_docu", "title": "World History Lab" },
+    { "channelId": "ch_classical", "title": "Bhakti Melodies" },
+    { "channelId": "ch_ayurveda", "title": "Ayurveda Living" }
+  ],
+  "playlists": [
+    { "title": "Old Classics", "itemCount": 54 },
+    { "title": "Morning Exercises", "itemCount": 16 },
+    { "title": "Important News Discussions", "itemCount": 29 }
+  ],
+  "fetchedAt": "2026-03-12T22:00:00Z"
+}

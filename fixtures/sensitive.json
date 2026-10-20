@@ -1,0 +1,183 @@
+{
+  "name": "sensitive",
+  "likes": [
+    {
+      "id": "vid_sen1",
+      "title": "Coping with Grief and Losing a Loved One: Guided Meditation",
+      "channelId": "ch_healing",
+      "channelTitle": "Healing Hearts",
+      "categoryId": "27",
+      "durationSec": 1800,
+      "tags": ["grief", "loss", "bereavement", "meditation"],
+      "likedAt": "2026-03-10T23:30:00Z"
+    },
+    {
+      "id": "vid_sen2",
+      "title": "Managing Panic Attacks and Severe Anxiety in 5 Steps",
+      "channelId": "ch_therapy",
+      "channelTitle": "Therapy In A Nutshell",
+      "categoryId": "27",
+      "durationSec": 900,
+      "tags": ["anxiety", "panicattack", "mentalhealth"],
+      "likedAt": "2026-03-09T01:20:00Z"
+    },
+    {
+      "id": "vid_sen3",
+      "title": "Living with Chronic Pain and Autoimmune Illness Support",
+      "channelId": "ch_chronic",
+      "channelTitle": "Chronic Health Journey",
+      "categoryId": "26",
+      "durationSec": 1400,
+      "tags": ["chronicillness", "pain", "support"],
+      "likedAt": "2026-03-08T22:15:00Z"
+    },
+    {
+      "id": "vid_sen4",
+      "title": "Gentle Rain Sounds for Sleeping and Insomnia Relief",
+      "channelId": "ch_sleep",
+      "channelTitle": "Calm Sleep Lab",
+      "categoryId": "10",
+      "durationSec": 28800,
+      "tags": ["sleep", "rainsounds", "insomnia"],
+      "likedAt": "2026-03-07T02:40:00Z"
+    },
+    {
+      "id": "vid_sen5",
+      "title": "Overcoming Burnout and Depression When Everything Feels Hard",
+      "channelId": "ch_therapy",
+      "channelTitle": "Therapy In A Nutshell",
+      "categoryId": "27",
+      "durationSec": 1150,
+      "tags": ["depression", "burnout", "mentalhealth"],
+      "likedAt": "2026-03-06T03:10:00Z"
+    },
+    {
+      "id": "vid_sen6",
+      "title": "Peaceful Piano Music for Emotional Healing",
+      "channelId": "ch_piano",
+      "channelTitle": "Healing Melodies",
+      "categoryId": "10",
+      "durationSec": 7200,
+      "tags": ["piano", "healing", "calm"],
+      "likedAt": "2026-03-05T01:50:00Z"
+    },
+    {
+      "id": "vid_sen7",
+      "title": "Understanding Childhood Trauma and Healing Inner Child",
+      "channelId": "ch_therapy",
+      "channelTitle": "Therapy In A Nutshell",
+      "categoryId": "27",
+      "durationSec": 1320,
+      "tags": ["trauma", "healing", "psychology"],
+      "likedAt": "2026-03-04T00:30:00Z"
+    },
+    {
+      "id": "vid_sen8",
+      "title": "Daily Affirmations for Overthinking and Anxiety",
+      "channelId": "ch_healing",
+      "channelTitle": "Healing Hearts",
+      "categoryId": "26",
+      "durationSec": 620,
+      "tags": ["affirmations", "anxiety", "peace"],
+      "likedAt": "2026-03-03T02:15:00Z"
+    },
+    {
+      "id": "vid_sen9",
+      "title": "How to Sit with Difficult Emotions: Acceptance Practice",
+      "channelId": "ch_mindful",
+      "channelTitle": "Mindful Living",
+      "categoryId": "27",
+      "durationSec": 980,
+      "tags": ["mindfulness", "emotions", "meditation"],
+      "likedAt": "2026-03-02T01:45:00Z"
+    },
+    {
+      "id": "vid_sen10",
+      "title": "Quiet Walking in Nature - 4K Forest Relaxation",
+      "channelId": "ch_nature",
+      "channelTitle": "Silent Trails",
+      "categoryId": "19",
+      "durationSec": 3600,
+      "tags": ["nature", "forest", "relaxation"],
+      "likedAt": "2026-03-01T23:20:00Z"
+    },
+    {
+      "id": "vid_sen11",
+      "title": "Breathing Exercises to Slow Down Heart Rate",
+      "channelId": "ch_therapy",
+      "channelTitle": "Therapy In A Nutshell",
+      "categoryId": "27",
+      "durationSec": 540,
+      "tags": ["breathing", "vagusnerve", "anxiety"],
+      "likedAt": "2026-02-28T02:10:00Z"
+    },
+    {
+      "id": "vid_sen12",
+      "title": "Healing After Toxic Relationships Advice",
+      "channelId": "ch_healing",
+      "channelTitle": "Healing Hearts",
+      "categoryId": "27",
+      "durationSec": 1240,
+      "tags": ["relationships", "healing", "selfworth"],
+      "likedAt": "2026-02-27T01:05:00Z"
+    },
+    {
+      "id": "vid_sen13",
+      "title": "Sleep Hypnosis for Deep Rest and Letting Go of Stress",
+      "channelId": "ch_sleep",
+      "channelTitle": "Calm Sleep Lab",
+      "categoryId": "10",
+      "durationSec": 10800,
+      "tags": ["hypnosis", "sleep", "stress"],
+      "likedAt": "2026-02-26T03:00:00Z"
+    },
+    {
+      "id": "vid_sen14",
+      "title": "Comfort Food Recipes When You Have No Energy to Cook",
+      "channelId": "ch_simplecook",
+      "channelTitle": "Easy Meals",
+      "categoryId": "26",
+      "durationSec": 780,
+      "tags": ["recipes", "comfortfood", "easy"],
+      "likedAt": "2026-02-25T19:30:00Z"
+    },
+    {
+      "id": "vid_sen15",
+      "title": "Cat Purring Sounds for Relaxation 10 Hours",
+      "channelId": "ch_nature",
+      "channelTitle": "Silent Trails",
+      "categoryId": "15",
+      "durationSec": 36000,
+      "tags": ["cats", "purring", "comfort"],
+      "likedAt": "2026-02-24T22:15:00Z"
+    },
+    {
+      "id": "vid_sen16",
+      "title": "Words of Encouragement for Hard Days",
+      "channelId": "ch_mindful",
+      "channelTitle": "Mindful Living",
+      "categoryId": "27",
+      "durationSec": 450,
+      "tags": ["encouragement", "hope", "kindness"],
+      "likedAt": "2026-02-23T01:30:00Z"
+    }
+  ],
+  "subs": [
+    { "channelId": "ch_therapy", "title": "Therapy In A Nutshell" },
+    { "channelId": "ch_healing", "title": "Healing Hearts" },
+    { "channelId": "ch_sleep", "title": "Calm Sleep Lab" },
+    { "channelId": "ch_chronic", "title": "Chronic Health Journey" },
+    { "channelId": "ch_piano", "title": "Healing Melodies" },
+    { "channelId": "ch_mindful", "title": "Mindful Living" },
+    { "channelId": "ch_nature", "title": "Silent Trails" },
+    { "channelId": "ch_simplecook", "title": "Easy Meals" },
+    { "channelId": "ch_calm", "title": "Daily Calm" },
+    { "channelId": "ch_support", "title": "Community Support Circle" }
+  ],
+  "playlists": [
+    { "title": "Night Sleep & Calm", "itemCount": 24 },
+    { "title": "Healing Talks", "itemCount": 18 },
+    { "title": "Comfort Videos", "itemCount": 11 }
+  ],
+  "fetchedAt": "2026-03-10T23:59:00Z"
+}
