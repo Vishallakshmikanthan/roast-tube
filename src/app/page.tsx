@@ -84,13 +84,26 @@ export default function Home() {
               {error}
             </p>
           )}
-          <div className="mt-5 max-w-[550px] flex items-start gap-2 border-2 border-black bg-[#fff8e8] p-3 text-sm font-semibold">
-            <ShieldCheck className="shrink-0 mt-0.5 text-[#278b6f]" />
-            <span>
-              Google read-only access: liked videos, subscriptions &amp;
-              playlists. You choose what to share. We never ask for your
-              password.
-            </span>
+          <div className="mt-5 max-w-[550px] space-y-2">
+            <div className="border-2 border-black bg-[#fff8e8] p-3 text-xs md:text-sm font-semibold flex items-start gap-2 shadow-[2px_2px_0_#18130f]">
+              <ShieldCheck className="shrink-0 mt-0.5 text-[#278b6f]" size={18} />
+              <span>
+                <b>100% Read-Only:</b> We analyze your liked videos, subscriptions &amp;
+                playlists. We never modify your account or ask for your password.
+              </span>
+            </div>
+            {status !== "authenticated" && (
+              <div className="border-2 border-black bg-[#fff2c2] p-3 text-xs font-semibold leading-relaxed shadow-[2px_2px_0_#18130f]">
+                <p className="font-extrabold text-[#18130f] flex items-center gap-1.5 uppercase tracking-wide text-[11px]">
+                  <span>💡</span> Sign-in Tip:
+                </p>
+                <p className="mt-1 text-[#332a21]">
+                  When prompted by Google, be sure to tick the checkbox for{" "}
+                  <b className="underline">“View your YouTube account”</b> so the AI can read your likes to roast you.
+                  {" "}(If prompted with <i>“Unverified App”</i> during public beta, tap <b>Advanced ➔ Go to roasttube.vercel.app</b> to continue!)
+                </p>
+              </div>
+            )}
           </div>
         </div>
         <div className="meme-collage relative min-h-[390px] lg:min-h-[490px] flex items-center justify-center">
