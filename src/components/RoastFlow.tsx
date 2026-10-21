@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Copy,
   Download,
   Flame,
@@ -14,6 +12,7 @@ import {
   LockKeyhole,
   Share2,
   ShieldCheck,
+  Sparkles,
   Swords,
   Trash2,
 } from "lucide-react";
@@ -24,6 +23,13 @@ import {
   sampleBattle,
   type BattleResult,
 } from "./BattleOutcome";
+import AnalyzingView from "./AnalyzingView";
+import ScorecardModal from "./ScorecardModal";
+import {
+  getBrainrotCharacter,
+  getBrainrotBadges,
+  BRAINROT_IMAGES,
+} from "@/lib/brainrot";
 
 type Persona = "aunt" | "gym_bro" | "angry_chef" | "gen_alpha" | "news_anchor";
 type Lang = "en" | "tanglish" | "hinglish";
@@ -188,7 +194,6 @@ export default function RoastFlow() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState<Saved[]>([]);
-  const [storyIndex, setStoryIndex] = useState(0);
   const [battleCode, setBattleCode] = useState("");
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -197,6 +202,7 @@ export default function RoastFlow() {
     }
   }, []);
   const [shareState, setShareState] = useState("");
+  const [scorecardOpen, setScorecardOpen] = useState(false);
   const [consent, setConsent] = useState(false);
   const [shareConsent, setShareConsent] = useState(false);
   const [battleConsent, setBattleConsent] = useState(false);
@@ -208,7 +214,7 @@ export default function RoastFlow() {
   }, [path]);
   useEffect(() => {
     if (path !== "/roast/demo/analyzing") return;
-    const timer = window.setTimeout(() => setPath("/roast/demo/result"), 1200);
+    const timer = window.setTimeout(() => setPath("/roast/demo/result"), 3800);
     return () => window.clearTimeout(timer);
   }, [path, setPath]);
   useEffect(() => {
@@ -431,16 +437,9 @@ export default function RoastFlow() {
       }
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const link = `${origin}${demo ? "/roast/demo" : `/roast/result/${encodeURIComponent(roast.slug)}`}`;
-      if (navigator.share)
-        await navigator.share({
-          title: "My RoastTube roast",
-          text: roast.content.share_line,
-          url: link,
-        });
-      else {
-        await navigator.clipboard.writeText(link);
-        setShareState("Link copied. You can share your roast now.");
-      }
+      // Open Scorecard Modal for sharing as image card per user request
+      setScorecardOpen(true);
+      setShareState("Scorecard ready! Choose how to share or download your card.");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
       setShareState(e instanceof Error ? e.message : "Sharing failed.");
@@ -518,40 +517,6 @@ export default function RoastFlow() {
   const resultReady = Boolean(
     (route === "/roast/demo/result" && roast?.slug === "sample-demo") ||
     (route.startsWith("/roast/result") && roast && roast.slug === resultSlug),
-  );
-  const storySlides = useMemo(
-    () =>
-      roast
-        ? [
-            {
-              eyebrow: "THE DIAGNOSIS",
-              title: roast.content.diagnosis.condition,
-              copy: roast.content.diagnosis.symptoms[0],
-            },
-            {
-              eyebrow: "THE RECEIPTS",
-              title: roast.content.receipts[0]?.label || "Exhibit A",
-              copy:
-                roast.content.receipts[0]?.joke || roast.content.evidence[0],
-            },
-            {
-              eyebrow: "THE RED FLAG",
-              title: "We need to talk.",
-              copy: roast.content.red_flag,
-            },
-            {
-              eyebrow: "THE PLOT TWIST",
-              title: "But there is hope.",
-              copy: roast.content.green_flag,
-            },
-            {
-              eyebrow: "THE FINAL WORD",
-              title: roast.content.tier_title,
-              copy: roast.content.share_line,
-            },
-          ]
-        : [],
-    [roast],
   );
   const beginLive = async () => {
     if (status === "authenticated") {
@@ -876,42 +841,15 @@ export default function RoastFlow() {
           </div>
         </section>
       )}
-      {route === "/roast/demo/analyzing" && (
-        <section className="comic-card max-w-3xl mx-auto p-8 my-8 text-center">
-          <p className="mono text-xs text-[#f22968]">
-            SAMPLE PREVIEW / NO GOOGLE DATA ACCESSED
-          </p>
-          <img
-            src="/images/play-cat-cutout.webp"
-            alt=""
-            className="w-36 h-36 object-contain mx-auto my-5"
-          />
-          <h1 className="display text-6xl">Preparing the receipts.</h1>
-          <p className="mt-4 font-semibold">
-            Loading an illustrative roast. This is not a live analysis.
-          </p>
-          <LoaderCircle
-            className="animate-spin mx-auto mt-6"
-            aria-label="Loading sample"
-          />
-        </section>
-      )}
-      {route === "/roast/analyzing" && (
-        <section className="comic-card max-w-2xl mx-auto p-8 text-center">
-          <h1 className="display text-6xl">Analysis in progress</h1>
-          <p className="mt-3">
-            Waiting for the live YouTube analysis response. No made-up progress
-            meter here.
-          </p>
-          <button
-            className="comic-button mt-5"
-            onClick={startAnalyze}
-            disabled={busy}
-          >
-            {busy ? "Analyzing your collections…" : "Retry analysis"}
-          </button>
-          {error && <p role="alert">{error}</p>}
-        </section>
+      {(route === "/roast/analyzing" || route === "/roast/demo/analyzing") && (
+        <AnalyzingView
+          lang={lang}
+          onLanguageChange={setLang}
+          busy={busy}
+          error={error}
+          onRetry={startAnalyze}
+          demo={route === "/roast/demo/analyzing" || demo}
+        />
       )}
       {route.startsWith("/roast/result") && !resultReady && loadingShared && (
         <section
@@ -951,67 +889,21 @@ export default function RoastFlow() {
           onPrivate={makePrivate}
           shareState={shareState}
           onDownload={() => download("roasttube-report.txt", reportText(roast))}
-          onStory={() => {
-            setStoryIndex(0);
-            setPath("/story");
-          }}
           onBattle={() => setPath("/battle")}
           onConsentChange={setShareConsent}
         />
       )}
-      {route === "/story" && roast && (
-        <section className="comic-card mt-8 p-6 max-w-3xl mx-auto text-center">
-          <p className="mono text-xs text-[#f22968]">
-            STORY MODE {roast.slug === "sample-demo" ? "· DEMO ONLY" : ""} ·{" "}
-            {storyIndex + 1}/{storySlides.length}
-          </p>
-          <h2 className="display text-6xl mt-2">
-            {storySlides[storyIndex]?.eyebrow}
-          </h2>
-          <div className="bg-[#f6ce47] border-2 border-black p-8 mt-5">
-            <h3 className="display text-4xl">
-              {storySlides[storyIndex]?.title}
-            </h3>
-            <p className="text-lg font-semibold mt-3">
-              {storySlides[storyIndex]?.copy}
-            </p>
-          </div>
-          <div className="flex justify-between mt-5">
-            <button
-              className="comic-button secondary"
-              onClick={() => setStoryIndex(Math.max(0, storyIndex - 1))}
-              disabled={storyIndex === 0}
-            >
-              <ChevronLeft /> Previous
-            </button>
-            <button
-              className="comic-button"
-              onClick={() =>
-                storyIndex === storySlides.length - 1
-                  ? setPath(
-                      roast.slug === "sample-demo"
-                        ? "/roast/demo/result"
-                        : `/roast/result/${roast.slug}`,
-                    )
-                  : setStoryIndex(storyIndex + 1)
-              }
-            >
-              {storyIndex === storySlides.length - 1 ? "Back to roast" : "Next"}{" "}
-              <ChevronRight />
-            </button>
-          </div>
-        </section>
-      )}
-      {route === "/story" && !roast && (
-        <section className="comic-card mt-8 p-8 text-center">
-          <h1 className="display text-5xl">A story needs a roast first.</h1>
-          <p className="mt-2">
-            Try the labeled sample preview or connect YouTube for a live one.
-          </p>
-          <Link href="/roast/demo" className="comic-button mt-5 no-underline">
-            Open sample preview
-          </Link>
-        </section>
+      {roast && (
+        <ScorecardModal
+          roast={roast}
+          isOpen={scorecardOpen}
+          onClose={() => setScorecardOpen(false)}
+          publicUrl={
+            typeof window !== "undefined"
+              ? `${window.location.origin}${demo ? "/roast/demo" : `/roast/result/${encodeURIComponent(roast.slug)}`}`
+              : ""
+          }
+        />
       )}
       {route === "/roasts" && (
         <section className="mt-8">
@@ -1142,7 +1034,6 @@ function Result({
   onPrivate,
   shareState,
   onDownload,
-  onStory,
   onBattle,
   onConsentChange,
 }: {
@@ -1153,11 +1044,34 @@ function Result({
   onPrivate: () => void;
   shareState: string;
   onDownload: () => void;
-  onStory: () => void;
   onBattle: () => void;
   onConsentChange: (v: boolean) => void;
 }) {
   const st = r.stats;
+  const character = getBrainrotCharacter({
+    persona: r.persona,
+    score: st?.brainRotScore ?? 50,
+    tier: st?.tier ?? "C",
+    heat: r.heat,
+    lang: r.lang,
+    nightLikes: st?.nightLikes ?? 0,
+    tutorialsSaved: st?.tutorialsSaved ?? 0,
+    shortsCount: st?.shortsCount ?? 0,
+    aura: st?.aura ?? 0,
+    mainCharacter: st?.mainCharacter ?? 50,
+  });
+
+  const badges = getBrainrotBadges({
+    score: st?.brainRotScore ?? 50,
+    tier: st?.tier ?? "C",
+    heat: r.heat,
+    lang: r.lang,
+    nightLikes: st?.nightLikes ?? 0,
+    tutorialsSaved: st?.tutorialsSaved ?? 0,
+    shortsCount: st?.shortsCount ?? 0,
+    aura: st?.aura ?? 0,
+  });
+
   return (
     <section className="mt-8 pop-in">
       {demo && (
@@ -1206,9 +1120,9 @@ function Result({
             {r.content.aura_comment}
           </p>
           <img
-            className="w-28 h-28 object-contain absolute right-2 bottom-2 opacity-90"
-            src="/images/pixel-cat.webp"
-            alt="Pixel cat illustration"
+            className="w-28 h-28 object-cover rounded-xl border-2 border-white/30 absolute right-2 bottom-2 opacity-95 shadow-lg"
+            src={character.url}
+            alt={character.title}
           />
         </article>
         <article className="comic-card p-5 md:p-7">
@@ -1303,12 +1217,98 @@ function Result({
           </p>
         </article>
       </div>
+
+      {/* Brainrot Character & Badges Showcase */}
+      <article className="comic-card p-5 md:p-7 mt-5 border-[3px] border-black bg-[#faf4e6]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-black/20 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="bg-[#ffd23f] text-black font-extrabold text-xs px-2.5 py-0.5 border border-black uppercase tracking-wider flex items-center gap-1">
+                <Sparkles size={13} className="text-[#f22968]" /> SUITABLE BRAINROT ARCHETYPE
+              </span>
+              <span className="mono text-xs font-bold text-[#635543]">
+                {character.tag}
+              </span>
+            </div>
+            <h2 className="display text-3xl md:text-4xl mt-1">
+              {character.title}
+            </h2>
+            <p className="text-sm font-semibold text-[#5a4d3f]">
+              “{character.quote}”
+            </p>
+          </div>
+          <button
+            onClick={onShare}
+            className="comic-button text-sm flex items-center gap-2"
+          >
+            <Share2 size={16} /> Share Official Scorecard Card
+          </button>
+        </div>
+
+        <div className="grid md:grid-cols-[220px_1fr] gap-6 mt-5 items-center">
+          {/* Character Card Preview */}
+          <div className="relative rounded-2xl bg-[#120e0a] border-[3px] border-[#e4a826] p-2.5 shadow-[0_0_20px_rgba(228,168,38,0.3)] max-w-[220px] mx-auto w-full">
+            <div className="flex justify-between items-center text-[9px] font-black text-[#ffd23f] px-1 mb-1">
+              <span>ROASTTUBE</span>
+              <span>{character.tag}</span>
+            </div>
+            <div className="aspect-square rounded-xl overflow-hidden border border-[#e4a826]/70 relative">
+              <img
+                src={character.url}
+                alt={character.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-1 inset-x-1 bg-gradient-to-r from-[#d97706] to-[#fbbf24] text-black text-[9px] font-black py-0.5 px-1 rounded text-center truncate">
+                ★ {character.title} ★
+              </div>
+            </div>
+            <div className="text-[8px] mono font-bold text-[#d4af37] text-center mt-1">
+              SCROLL • WATCH • LIKE • REPEAT
+            </div>
+          </div>
+
+          {/* Earned Badges Grid */}
+          <div>
+            <h3 className="mono text-xs font-black text-[#4b4034] uppercase tracking-wider mb-3">
+              EARNED BADGES ({badges.length}) — DERIVED FROM YOUR YOUTUBE DATA
+            </h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {badges.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center gap-3 bg-white border-2 border-black rounded-xl p-2.5 shadow-[2px_2px_0_#18130f]"
+                >
+                  <div className="w-11 h-11 rounded-lg bg-[#ffd23f] border-2 border-black overflow-hidden shrink-0 shadow-sm">
+                    <img
+                      src={b.imageUrl}
+                      alt={b.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="leading-tight">
+                    <div className="flex items-center gap-1.5">
+                      <b className="text-xs text-black">{b.name}</b>
+                      <span className="text-[9px] font-black text-[#f22968] uppercase">
+                        {b.rarity}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#635543] mt-0.5 line-clamp-2">
+                      {b.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </article>
+
       <div className="flex flex-wrap gap-3 mt-5">
         <Link href="/" className="comic-button secondary no-underline">
           <ArrowLeft size={17} /> Home
         </Link>
         <button className="comic-button" onClick={onShare}>
-          <Share2 size={17} /> Share / copy link
+          <Share2 size={17} /> Share Scorecard Card
         </button>
         {!demo && r.isPublic && (
           <button className="comic-button secondary" onClick={onPrivate}>
@@ -1317,9 +1317,6 @@ function Result({
         )}
         <button className="comic-button secondary" onClick={onDownload}>
           <Download size={17} /> Download text report
-        </button>
-        <button className="comic-button secondary" onClick={onStory}>
-          Story mode
         </button>
         <button className="comic-button secondary" onClick={onBattle}>
           <Swords size={17} /> Battle

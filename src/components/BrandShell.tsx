@@ -38,7 +38,6 @@ export function BrandShell({ children }: { children: ReactNode }) {
               ["/", "Home"],
               ["/roasts", "My roasts"],
               ["/battle", "Battle"],
-              ["/story", "Story mode"],
               ["/privacy", "Privacy"],
             ].map(([href, label]) => (
               <Link
