@@ -9,7 +9,7 @@ import { upsertUser } from "@/lib/services/analyze";
 import { PERSONAS, LANGS, HEATS } from "@/lib/prompts/schema";
 
 const battleCreateSchema = z.object({
-  analysisId: z.string().uuid("Invalid analysis ID"),
+  analysisId: z.string().uuid("Invalid analysis ID").optional(),
   persona: z.enum(PERSONAS),
   lang: z.enum(LANGS),
   heat: z.enum(HEATS),

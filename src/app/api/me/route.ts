@@ -1,6 +1,6 @@
 // src/app/api/me/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, analyses } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
@@ -8,6 +8,39 @@ import { AppError } from "@/lib/errors";
 import { assertSameOrigin, toErrorResponse } from "@/lib/api";
 import { redis } from "@/lib/redis";
 import { upsertUser } from "@/lib/services/analyze";
+
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ authenticated: false, user: null, hasAnalysis: false });
+    }
+
+    if (!db) {
+      return NextResponse.json({ authenticated: true, user: session.user, hasAnalysis: false });
+    }
+
+    const user = await upsertUser(session.user);
+    const latestAnalysis = await db.query.analyses.findFirst({
+      where: eq(analyses.userId, user.id),
+      orderBy: [desc(analyses.createdAt)],
+    });
+
+    return NextResponse.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+      },
+      hasAnalysis: Boolean(latestAnalysis),
+      latestAnalysisId: latestAnalysis?.id || null,
+      stats: latestAnalysis?.stats || null,
+    });
+  } catch (e) {
+    return toErrorResponse(e);
+  }
+}
 
 export async function DELETE(req: NextRequest) {
   try {

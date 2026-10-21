@@ -10,7 +10,7 @@ import { upsertUser } from "@/lib/services/analyze";
 export const maxDuration = 30;
 
 const joinBattleSchema = z.object({
-  analysisId: z.string().uuid("Invalid analysis ID"),
+  analysisId: z.string().uuid("Invalid analysis ID").optional(),
   consent: z.boolean(),
 });
 

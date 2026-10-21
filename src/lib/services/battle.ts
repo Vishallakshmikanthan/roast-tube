@@ -1,5 +1,5 @@
 // src/lib/services/battle.ts
-import { and, eq } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
 import { battles, analyses, users } from "@/lib/db/schema";
@@ -109,7 +109,7 @@ export function buildBattleFallback(
 export async function createBattle(
   creatorUserId: string,
   input: {
-    analysisId: string;
+    analysisId?: string;
     persona: Persona;
     lang: Lang;
     heat: Heat;
@@ -119,15 +119,27 @@ export async function createBattle(
     throw new AppError("DB_ERROR", "Database not configured.", 500);
   }
 
-  const analysis = await db.query.analyses.findFirst({
-    where: and(
-      eq(analyses.id, input.analysisId),
-      eq(analyses.userId, creatorUserId)
-    ),
-  });
+  let analysis = null;
+  if (input.analysisId) {
+    analysis = await db.query.analyses.findFirst({
+      where: and(
+        eq(analyses.id, input.analysisId),
+        eq(analyses.userId, creatorUserId)
+      ),
+    });
+  } else {
+    analysis = await db.query.analyses.findFirst({
+      where: eq(analyses.userId, creatorUserId),
+      orderBy: [desc(analyses.createdAt)],
+    });
+  }
 
   if (!analysis) {
-    throw new AppError("NOT_FOUND", "Analysis not found.", 404);
+    throw new AppError(
+      "NOT_FOUND",
+      "No YouTube analysis found for your account. Please scan your YouTube first.",
+      404
+    );
   }
 
   const code = generateBattleCode(8);
@@ -153,11 +165,73 @@ export async function createBattle(
   };
 }
 
+export async function getBattleByCode(code: string, currentUserId?: string) {
+  if (!db) {
+    throw new AppError("DB_ERROR", "Database not configured.", 500);
+  }
+
+  const battle = await db.query.battles.findFirst({
+    where: eq(battles.code, code),
+  });
+
+  if (!battle) {
+    throw new AppError("NOT_FOUND", "Battle invite not found.", 404);
+  }
+
+  if (battle.expiresAt < new Date() && battle.status === "pending") {
+    await db
+      .update(battles)
+      .set({ status: "expired" })
+      .where(eq(battles.id, battle.id));
+    battle.status = "expired";
+  }
+
+  const [creatorUser, creatorAnalysis, opponentUser] = await Promise.all([
+    db.query.users.findFirst({
+      where: eq(users.id, battle.creatorUserId),
+    }),
+    db.query.analyses.findFirst({
+      where: eq(analyses.id, battle.creatorAnalysisId),
+    }),
+    battle.opponentUserId
+      ? db.query.users.findFirst({
+          where: eq(users.id, battle.opponentUserId),
+        })
+      : null,
+  ]);
+
+  const isCreator = currentUserId ? currentUserId === battle.creatorUserId : false;
+  const isOpponent = currentUserId ? currentUserId === battle.opponentUserId : false;
+
+  const creatorStats = creatorAnalysis?.stats as Stats | undefined;
+
+  return {
+    id: battle.id,
+    code: battle.code,
+    status: battle.status,
+    creatorName: creatorUser?.displayName || "Player 1",
+    creatorAvatar: creatorUser?.avatarUrl || null,
+    creatorScore: creatorStats?.brainRotScore ?? null,
+    creatorTier: creatorStats?.tier ?? null,
+    opponentName: opponentUser?.displayName || null,
+    opponentAvatar: opponentUser?.avatarUrl || null,
+    persona: battle.persona,
+    lang: battle.lang,
+    heat: battle.heat,
+    result: battle.result,
+    slug: battle.slug,
+    isCreator,
+    isOpponent,
+    expiresAt: battle.expiresAt,
+    createdAt: battle.createdAt,
+  };
+}
+
 export async function joinBattle(
   opponentUserId: string,
   code: string,
   input: {
-    analysisId: string;
+    analysisId?: string;
     consent: boolean;
   }
 ) {
@@ -171,6 +245,22 @@ export async function joinBattle(
 
   if (!battle) {
     throw new AppError("NOT_FOUND", "Battle not found.", 404);
+  }
+
+  if (battle.status === "done") {
+    return {
+      status: "done",
+      result: battle.result,
+      slug: battle.slug,
+    };
+  }
+
+  if (opponentUserId === battle.creatorUserId) {
+    throw new AppError(
+      "INVALID_STATE",
+      "You cannot battle against yourself! Share this invite link with a friend.",
+      400
+    );
   }
 
   if (battle.status !== "pending") {
@@ -193,17 +283,26 @@ export async function joinBattle(
     return { status: "declined" };
   }
 
+  let opponentAnalysis = null;
+  if (input.analysisId) {
+    opponentAnalysis = await db.query.analyses.findFirst({
+      where: and(
+        eq(analyses.id, input.analysisId),
+        eq(analyses.userId, opponentUserId)
+      ),
+    });
+  } else {
+    opponentAnalysis = await db.query.analyses.findFirst({
+      where: eq(analyses.userId, opponentUserId),
+      orderBy: [desc(analyses.createdAt)],
+    });
+  }
+
   // Find creator and opponent data
-  const [creatorAnalysis, opponentAnalysis, creatorUser, opponentUser] =
+  const [creatorAnalysis, creatorUser, opponentUser] =
     await Promise.all([
       db.query.analyses.findFirst({
         where: eq(analyses.id, battle.creatorAnalysisId),
-      }),
-      db.query.analyses.findFirst({
-        where: and(
-          eq(analyses.id, input.analysisId),
-          eq(analyses.userId, opponentUserId)
-        ),
       }),
       db.query.users.findFirst({
         where: eq(users.id, battle.creatorUserId),
@@ -273,13 +372,20 @@ export async function joinBattle(
   const slug = generateSlug(10);
   const resultExpiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000); // 30 days
 
+  const finalResult = {
+    ...result,
+    comparison,
+    nameA,
+    nameB,
+  };
+
   const [updated] = await db
     .update(battles)
     .set({
       opponentUserId,
       opponentAnalysisId: opponentAnalysis.id,
       status: "done",
-      result: { ...result, comparison },
+      result: finalResult,
       slug,
       expiresAt: resultExpiresAt,
     })

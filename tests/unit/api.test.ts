@@ -10,6 +10,9 @@ import { POST as analyzePost } from "@/app/api/analyze/route";
 import { POST as roastPost } from "@/app/api/roast/route";
 import { POST as reportPost } from "@/app/api/report/route";
 import { GET as cronPurgeGet } from "@/app/api/cron/purge/route";
+import { POST as battlePost } from "@/app/api/battle/route";
+import { GET as battleGet } from "@/app/api/battle/[code]/route";
+import { POST as battleJoinPost } from "@/app/api/battle/[code]/join/route";
 import { computeStats } from "@/lib/stats/compute";
 import gamerFixture from "../../fixtures/gamer.json";
 import studentFixture from "../../fixtures/student.json";
@@ -234,4 +237,44 @@ describe("Module 6: API Routes & Service Infrastructure", () => {
       expect(body.error.code).toBe("UNAUTHORIZED");
     });
   });
+
+  describe("11.8 Battle Routes (/api/battle)", () => {
+    it("rejects unauthenticated POST /api/battle with 401 UNAUTH", async () => {
+      const req = new NextRequest("http://localhost:3000/api/battle", {
+        method: "POST",
+        body: JSON.stringify({
+          persona: "aunt",
+          lang: "en",
+          heat: "medium",
+        }),
+      });
+
+      const res = await battlePost(req);
+      expect(res.status).toBe(401);
+      const body = await res.json();
+      expect(body.error.code).toBe("UNAUTH");
+    });
+
+    it("rejects unauthenticated POST /api/battle/[code]/join with 401 UNAUTH", async () => {
+      const req = new NextRequest("http://localhost:3000/api/battle/testcode1/join", {
+        method: "POST",
+        body: JSON.stringify({
+          consent: true,
+        }),
+      });
+
+      const res = await battleJoinPost(req, { params: Promise.resolve({ code: "testcode1" }) });
+      expect(res.status).toBe(401);
+      const body = await res.json();
+      expect(body.error.code).toBe("UNAUTH");
+    });
+
+    it("GET /api/battle/[code] handles unknown battle or DB error gracefully", async () => {
+      const req = new NextRequest("http://localhost:3000/api/battle/nonexistent");
+      const res = await battleGet(req, { params: Promise.resolve({ code: "nonexistent" }) });
+      // Returns error status (404 NOT_FOUND or 500 DB_ERROR when db mock/env is unset)
+      expect([404, 500]).toContain(res.status);
+    });
+  });
 });
+
