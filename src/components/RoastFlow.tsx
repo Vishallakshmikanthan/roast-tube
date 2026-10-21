@@ -23,6 +23,7 @@ import {
   sampleBattle,
   type BattleResult,
 } from "./BattleOutcome";
+import { BattleView } from "./BattleView";
 import AnalyzingView from "./AnalyzingView";
 import ScorecardModal from "./ScorecardModal";
 import {
@@ -147,7 +148,9 @@ function isDemoPath(path: string) {
   return path.includes("/demo");
 }
 function baseRoute(path: string) {
-  return path.split("?")[0];
+  const p = path.split("?")[0];
+  if (p.startsWith("/battle")) return "/battle";
+  return p;
 }
 function storageKey(identity: string) {
   return `roasttube:saved:${identity}`;
@@ -198,9 +201,16 @@ export default function RoastFlow() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const code = new URLSearchParams(window.location.search).get("code");
-      if (code) setBattleCode(code);
+      if (code) {
+        setBattleCode(code);
+      } else {
+        const m = window.location.pathname.match(/^\/battle\/([^/?#]+)/);
+        if (m?.[1] && m[1] !== "page") {
+          setBattleCode(m[1]);
+        }
+      }
     }
-  }, []);
+  }, [path]);
   const [shareState, setShareState] = useState("");
   const [scorecardOpen, setScorecardOpen] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -966,51 +976,9 @@ export default function RoastFlow() {
         </section>
       )}
       {route === "/battle" && (
-        <Battle
-          roast={roast}
-          demo={demo || roast?.slug === "sample-demo"}
-          onGenerate={async () => {
-            if (!roast) {
-              setError("Make or open a roast before starting a battle.");
-              return;
-            }
-            if (demo || roast.slug === "sample-demo") {
-              setError(
-                "Battle invitations require a live roast. Demo mode cannot create invites.",
-              );
-              return;
-            }
-            setBusy(true);
-            try {
-              const analysisId = sessionStorage.getItem("roasttube:analysisId");
-              const res = await fetch("/api/battle", {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ analysisId, persona, lang, heat }),
-              });
-              const d = await res.json();
-              if (!res.ok)
-                throw new Error(apiError(d, "Could not create battle."));
-              setBattleCode(
-                d.code || d.invitationCode || d.invitation?.code || "",
-              );
-            } catch (e) {
-              setError(
-                e instanceof Error ? e.message : "Battle request failed.",
-              );
-            } finally {
-              setBusy(false);
-            }
-          }}
-          battleCode={battleCode}
-          onCode={setBattleCode}
-          consent={battleConsent}
-          onConsent={setBattleConsent}
-          busy={busy}
-          error={error}
-          onCopy={copyInvite}
-          onClear={() => setError("")}
+        <BattleView
+          initialCode={battleCode}
+          onNavigateHome={() => setPath("/")}
         />
       )}
       {route === "/roast/connect" && status !== "authenticated" && (
@@ -1358,180 +1326,4 @@ function Metric({
     </article>
   );
 }
-function Battle({
-  roast,
-  demo,
-  onGenerate,
-  battleCode,
-  onCode,
-  consent,
-  onConsent,
-  busy,
-  error,
-  onCopy,
-  onClear,
-}: {
-  roast: Roast | null;
-  demo: boolean;
-  onGenerate: () => void;
-  battleCode: string;
-  onCode: (v: string) => void;
-  consent: boolean;
-  onConsent: (v: boolean) => void;
-  busy: boolean;
-  error: string;
-  onCopy: () => void;
-  onClear: () => void;
-}) {
-  const [path, setPath] = useLocation();
-  const [joinError, setJoinError] = useState("");
-  const [joining, setJoining] = useState(false);
-  const [outcome, setOutcome] = useState<BattleResult | null>(null);
-  const [sampleOutcome, setSampleOutcome] = useState(false);
-  const join = async () => {
-    if (joining || !consent || !battleCode.trim()) return;
-    setJoinError("");
-    if (demo) {
-      setJoinError(
-        "Sample mode does not send battle invitations. Start a live roast to join a friend.",
-      );
-      return;
-    }
-    const analysisId = sessionStorage.getItem("roasttube:analysisId");
-    if (!analysisId) {
-      setJoinError("Make a live roast before joining a battle.");
-      return;
-    }
-    setJoining(true);
-    try {
-      const res = await fetch(
-        `/api/battle/${encodeURIComponent(battleCode)}/join`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ analysisId, consent }),
-        },
-      );
-      const d = await res.json();
-      if (!res.ok) throw new Error(apiError(d, "Could not join this battle."));
-      if (d.status === "done" && d.result) {
-        setOutcome(d.result);
-        setSampleOutcome(false);
-        setJoinError("Battle accepted. Your comparison is shown below.");
-      } else {
-        setJoinError(
-          "The battle has not completed. Please check your invitation and try again.",
-        );
-      }
-    } catch (e) {
-      setJoinError(e instanceof Error ? e.message : "Could not join battle.");
-    } finally {
-      setJoining(false);
-    }
-  };
-  return (
-    <section className="mt-8">
-      <div className="grid lg:grid-cols-[1fr_.78fr] gap-5">
-        <article className="comic-card p-6">
-          <p className="mono text-xs text-[#f22968]">
-            FRIENDLY COMPETITION / LIVE INVITE
-          </p>
-          <h1 className="display text-6xl mt-2">Battle a friend.</h1>
-          <p className="mt-3">
-            Who has the more cooked feed? Create a challenge from your live
-            analysis—or join a friend’s code.
-          </p>
-          {roast ? (
-            <p className="mt-3 font-bold">
-              Current roast: {roast.content.tier_title}
-              {demo ? " · DEMO (invite unavailable)" : ""}
-            </p>
-          ) : (
-            <p className="mt-3 font-bold">
-              Make a live roast before creating a challenge.
-            </p>
-          )}
-          <button
-            onClick={onGenerate}
-            disabled={busy || demo}
-            className="comic-button mt-5"
-          >
-            {busy ? "Creating invite…" : "Create battle invite"}{" "}
-            <Swords size={18} />
-          </button>
-          {battleCode && (
-            <div className="mt-4 border-2 border-black bg-[#f6ce47] p-4">
-              <b>Invitation code</b>
-              <p className="mono text-xl font-bold mt-2">{battleCode}</p>
-              <button onClick={onCopy} className="comic-button secondary mt-3">
-                <Copy size={16} /> Copy invitation
-              </button>
-            </div>
-          )}
-          {error && (
-            <p role="alert" className="mt-3 text-[#b01832] font-bold">
-              {error}
-            </p>
-          )}
-        </article>
-        <article className="comic-card bg-[#f6ce47] p-6">
-          <h2 className="display text-4xl">Join the roast-off</h2>
-          <label className="font-bold text-sm block mt-4">
-            Friend’s invite code
-            <input
-              className="block w-full border-2 border-black p-3 bg-[#fff8e8] mt-2"
-              value={battleCode}
-              onChange={(e) => onCode(e.target.value)}
-              placeholder="Paste invite code"
-            />
-          </label>
-          <label className="flex gap-2 mt-4 text-sm">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => onConsent(e.target.checked)}
-            />{" "}
-            I consent to sharing my roast result with the inviter for this
-            battle.
-          </label>
-          <button
-            onClick={join}
-            disabled={!battleCode.trim() || !consent || joining || demo}
-            className="comic-button mt-4"
-          >
-            {joining ? "Joining…" : "Join battle"} <ArrowRight size={17} />
-          </button>
-          {joinError && (
-            <p role="status" className="mt-3 font-bold text-sm">
-              {joinError}
-            </p>
-          )}
-          <button
-            onClick={() => {
-              onClear();
-              setPath("/roast");
-            }}
-            className="block underline mt-6 text-sm font-bold"
-          >
-            Start a live roast first
-          </button>
-          <p className="text-xs mt-5">
-            The invite uses the existing battle service. Demo previews cannot
-            create invitations.
-          </p>
-        </article>
-      </div>
-      <button
-        className="comic-button secondary mt-6"
-        onClick={() => {
-          setOutcome(sampleBattle);
-          setSampleOutcome(true);
-        }}
-      >
-        Preview a sample battle result
-      </button>
-      {outcome && <BattleOutcome result={outcome} sample={sampleOutcome} />}
-    </section>
-  );
-}
+
