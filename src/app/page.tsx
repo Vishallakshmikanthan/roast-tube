@@ -4,6 +4,7 @@ import { Link, useLocation } from "@/lib/navigation";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useSession } from "@/components/providers/AuthProvider";
 import { useState } from "react";
+import { RoastTubeIntro } from "@/components/RoastTubeIntro";
 
 export default function Home() {
   const { status, signIn } = useSession();
@@ -29,7 +30,9 @@ export default function Home() {
   };
 
   return (
-    <main className="max-w-[1240px] mx-auto px-4 pt-8">
+    <>
+      <RoastTubeIntro />
+      <main className="max-w-[1240px] mx-auto px-4 pt-8">
       <section className="grid lg:grid-cols-[1fr_.92fr] gap-7 items-center min-h-[500px]">
         <div className="relative z-10 py-8">
           <span className="inline-flex border-2 border-black bg-[#f6ce47] px-3 py-1 font-extrabold text-xs uppercase tracking-wide -rotate-2 shadow-[3px_3px_0_#18130f]">
@@ -218,5 +221,6 @@ export default function Home() {
         </Link>
       </section>
     </main>
+    </>
   );
 }
