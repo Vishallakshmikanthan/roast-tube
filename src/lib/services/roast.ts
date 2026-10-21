@@ -36,27 +36,48 @@ export function addHours(d: Date, h: number): Date {
   return new Date(d.getTime() + h * 3600 * 1000);
 }
 
+const memorySampleStore =
+  (globalThis as any).__sampleStore ??
+  new Map<string, { encrypted: string; exp: number }>();
+(globalThis as any).__sampleStore = memorySampleStore;
+
 export async function loadSample(analysisId: string): Promise<Sample | null> {
-  if (!redis) return null;
-  try {
-    const raw = await redis.get<string>(`sample:${analysisId}`);
-    if (!raw) return null;
-    return open<Sample>(raw);
-  } catch {
-    return null;
+  if (redis) {
+    try {
+      const raw = await redis.get<string>(`sample:${analysisId}`);
+      if (raw) return open<Sample>(raw);
+    } catch (e) {
+      console.warn("[loadSample] Redis lookup failed, trying fallback:", e);
+    }
   }
+
+  const mem = memorySampleStore.get(analysisId);
+  if (mem && mem.exp > Date.now()) {
+    try {
+      return open<Sample>(mem.encrypted);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 export async function storeSample(
   analysisId: string,
   sample: Sample
 ): Promise<void> {
-  if (!redis) return;
   try {
     const encrypted = seal(sample);
-    await redis.set(`sample:${analysisId}`, encrypted, { ex: 86400 }); // 24 hours
-  } catch {
-    // Ignore Redis error in test / mock
+    memorySampleStore.set(analysisId, {
+      encrypted,
+      exp: Date.now() + 86400 * 1000,
+    });
+    if (redis) {
+      await redis.set(`sample:${analysisId}`, encrypted, { ex: 86400 }); // 24 hours
+    }
+  } catch (e) {
+    console.error("[storeSample] Error storing sample:", e);
   }
 }
 
@@ -124,12 +145,21 @@ export async function getOrCreateRoast(
 
   await enforceLimits(userId);
 
-  const sample = await loadSample(analysis.id);
-  if (!sample) {
-    throw new AppError("SAMPLE_EXPIRED", "Please re-run your analysis.", 410);
-  }
-
+  let sample = await loadSample(analysis.id);
   const stats = analysis.stats as Stats;
+
+  if (!sample) {
+    if (stats?.topChannels && stats.topChannels.length > 0) {
+      console.log("[roast.ts] Sample cache missed; constructing fallback sample from stats");
+      sample = {
+        channels: stats.topChannels.map((c) => c.name),
+        titles: [],
+        playlists: [],
+      };
+    } else {
+      throw new AppError("SAMPLE_EXPIRED", "Please re-run your analysis.", 410);
+    }
+  }
   const gentle = stats.sensitiveSkew;
   const system = composeSystem({ ...input, gentle });
   const user = composeUser(stats, sample);
@@ -159,6 +189,7 @@ export async function getOrCreateRoast(
         content = validateContent(extractJson(text), sample, input.lang, stats);
         meta = { ...meta, provider: name, model: providers[name].model };
       } catch (e) {
+        console.error(`[roast.ts] Provider '${name}' attempt failed:`, e);
         await recordFailure(name, e);
       }
     }

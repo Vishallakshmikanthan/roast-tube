@@ -66,6 +66,7 @@ export async function fetchAll(
       pageToken = r?.nextPageToken ?? "";
       if (!pageToken) break;
     } catch (err: any) {
+      console.error("[YouTube API] Failed to fetch playlist items (likes):", err?.message || err, "status:", err?.status);
       if (err.code === "YT_AUTH" || err.code === "YT_QUOTA") throw err;
       partial = true;
       break;
@@ -126,6 +127,7 @@ export async function fetchAll(
       pageToken = r?.nextPageToken ?? "";
       if (!pageToken) break;
     } catch (err: any) {
+      console.error("[YouTube API] Failed to fetch subscriptions:", err?.message || err, "status:", err?.status);
       if (err.code === "YT_AUTH" || err.code === "YT_QUOTA") throw err;
       partial = true;
       break;
@@ -152,6 +154,7 @@ export async function fetchAll(
       });
     }
   } catch (err: any) {
+    console.error("[YouTube API] Failed to fetch playlists:", err?.message || err, "status:", err?.status);
     if (err.code === "YT_AUTH" || err.code === "YT_QUOTA") throw err;
     partial = true;
   }
@@ -174,6 +177,8 @@ export async function fetchAll(
       },
     ];
   });
+
+  console.log(`[YouTube API Normalized] Fetched: ${likes.length} likes, ${subs.length} subs, ${playlists.length} playlists.`);
 
   return {
     data: {
